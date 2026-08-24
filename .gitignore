@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Rise project additions
+.env
+.env.local
+node_modules/
+.next/
+*.db
+.vercel
