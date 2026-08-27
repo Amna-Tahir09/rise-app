@@ -8,6 +8,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
+    user_name = Column(String)
     mode = Column(String)  # "habit_tracker" or "tazkiya"
     created_at = Column(DateTime, default=datetime.utcnow)
 

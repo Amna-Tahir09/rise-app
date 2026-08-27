@@ -2,9 +2,9 @@ from db import SessionLocal
 from models import User, OnboardingAnswer, HabitLog, MuhasabaLog
 
 
-def create_user(email: str, mode: str):
+def create_user(email: str, mode: str, user_name: str = None):
     db = SessionLocal()
-    user = User(email=email, mode=mode)
+    user = User(email=email, mode=mode, user_name=user_name)
     db.add(user)
     db.commit()
     db.refresh(user)
