@@ -1,3 +1,11 @@
+<<<<<<< HEAD
+venv/
+.env
+*.db
+__pycache__/
+node_modules/
+.next/
+=======
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -224,3 +232,4 @@ node_modules/
 .next/
 *.db
 .vercel
+>>>>>>> db7c60b0341137ad792ccea07aca71945e4b8e6f
