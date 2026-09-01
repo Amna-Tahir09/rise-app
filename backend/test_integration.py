@@ -10,3 +10,5 @@ save_habit_log(user.id, "Gym", done=False, note="Too tired after work, skipped a
 logs = get_user_logs(user.id)
 for log in logs:
     print(log.habit_name, log.done, log.note)
+
+    

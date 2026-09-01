@@ -1,15 +1,25 @@
 from db import SessionLocal
 from models import User, OnboardingAnswer, HabitLog, MuhasabaLog
+from security import hash_password, verify_password
 
 
 def create_user(email: str, mode: str, user_name: str = None):
     db = SessionLocal()
-    user = User(email=email, mode=mode, user_name=user_name)
+    hashed_pw = hash_password(password)
+    user = User(email=email, mode=mode, user_name=user_name, password_hash=hashed_pw)
     db.add(user)
     db.commit()
     db.refresh(user)
     db.close()
     return user
+
+def authenticate_user(email: str, password: str):
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == email).first()
+    db.close()
+    if user and verify_password(password, user.password_hash):
+        return user
+    return None
 
 
 def save_onboarding_answer(user_id: int, question: str, answer: str):
