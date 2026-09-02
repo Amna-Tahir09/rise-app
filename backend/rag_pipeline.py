@@ -32,12 +32,10 @@ def answer_question(user_id: int, mode: str, question: str) -> str:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": question},
         ],
-        max_tokens=600,
+        max_tokens=1000,
     )
 
-    return resp.choices[0].message.content.strip()
-
-
-if __name__ == "__main__":
-    answer = answer_question(user_id=1, mode="habit", question="Why do I keep missing workouts?")
-    print("ANSWER:", repr(answer))
+    answer = resp.choices[0].message.content.strip()
+    if not answer:
+        return "I don't have enough information to answer that confidently."
+    return answer
