@@ -26,9 +26,19 @@ def retrieve_logs(user_id: int, mode: str, query: str, top_k: int = 5):
         include_metadata=True
     )
     return results
+def retrieve_classical_texts(query: str, top_k: int = 3):
+    query_vector = embed_text(query)
+    results = index.query(
+        vector=query_vector,
+        top_k=top_k,
+        filter={"type": "classical_text"},
+        include_metadata=True
+    )
+    return results    
 
 if __name__ == "__main__":
     store_log(1, "habit", "skipped gym on Wednesday, felt tired")
     store_log(1, "habit", "prayed fajr on time")
     result = retrieve_logs(1, "habit", "why do I keep missing workouts?")
     print(result)
+   

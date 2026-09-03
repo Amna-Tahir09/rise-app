@@ -1,31 +1,43 @@
 import os
 from dotenv import load_dotenv
 from groq import Groq
-from backend.pinecone_store import retrieve_logs
-
+from backend.pinecone_store import retrieve_logs, retrieve_classical_texts
 load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def answer_question(user_id: int, mode: str, question: str) -> str:
-    # 1. Retrieve relevant context (filtered by user + mode, so no cross-user leakage)
     results = retrieve_logs(user_id=user_id, mode=mode, query=question, top_k=5)
     matches = results.get("matches", [])
 
-    if not matches:
-        context = "No relevant logs found."
-    else:
-        context = "\n".join(f"- {m['metadata']['text']}" for m in matches)
+    log_context = "\n".join(f"- {m['metadata']['text']}" for m in matches) if matches else ""
 
-    # 2. Build a grounded prompt — critical for avoiding fabrication
+    classical_context = ""
+    if mode == "tazkiya":
+        classical_results = retrieve_classical_texts(query=question, top_k=3)
+        classical_matches = classical_results.get("matches", [])
+        if classical_matches:
+            classical_context = "\n".join(
+                f"- {m['metadata']['text']} (Source: {m['metadata'].get('source', 'Unknown')})"
+                for m in classical_matches
+            )
+
+    context_parts = []
+    if log_context:
+        context_parts.append(f"User's personal logs:\n{log_context}")
+    if classical_context:
+        context_parts.append(f"Relevant classical teachings:\n{classical_context}")
+
+    context = "\n\n".join(context_parts) if context_parts else "No relevant information found."
+
     system_prompt = (
         "You are a supportive coach. Answer the user's question using ONLY "
         "the information provided below. If the information given is not "
         "enough to answer confidently, say so clearly instead of guessing "
-        "or making something up.\n\n"
-        f"User's logs:\n{context}"
+        "or making something up. When citing classical teachings, mention "
+        "the source naturally.\n\n"
+        f"{context}"
     )
 
-    # 3. Call the model
     resp = client.chat.completions.create(
         model="openai/gpt-oss-20b",
         messages=[
