@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Sprout, Moon, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 const HABIT_QUESTIONS = [
   "What is your main goal?",
@@ -79,16 +79,9 @@ export default function OnboardingPage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-2 mb-3">
-            {mode === "habit" ? (
-              <Sprout className="text-violet-600" size={28} />
-            ) : (
-              <Moon className="text-violet-600" size={28} />
-            )}
-            <h1 className="text-3xl font-serif text-stone-900 leading-tight">
-              Let&apos;s get to know you.
-            </h1>
-          </div>
+          <h1 className="text-3xl font-serif text-stone-900 mb-3 leading-tight">
+            Let&apos;s get to know you.
+          </h1>
           <p className="text-stone-500 mb-8">A few quick questions to start.</p>
 
           {questions.map((q, index) => (
