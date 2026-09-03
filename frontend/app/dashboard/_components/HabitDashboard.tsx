@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Clock, Flame, ArrowUpRight } from "lucide-react";
+import { CheckCircle2, Clock, Flame, ArrowUpRight, CheckSquare, Plus } from "lucide-react";
 
 interface Habit {
   id: string;
@@ -187,13 +187,20 @@ export default function HabitDashboard({ greetingName = "", today = "" }: HabitD
         </div>
 
         {habits.length === 0 ? (
-          <p className="text-sm text-stone-400">
-            No habits yet.{" "}
-            <Link href="/dashboard/habits" className="text-[#3C6E7A] underline">
-              Add your first one
+          <div className="text-center py-8">
+            <div className="w-10 h-10 rounded-full bg-[#3C6E7A]/10 flex items-center justify-center mx-auto mb-3">
+              <CheckSquare className="text-[#3C6E7A]" size={18} />
+            </div>
+            <p className="text-stone-600 text-sm font-medium mb-1">No habits yet</p>
+            <p className="text-stone-400 text-xs mb-4">Start with one small habit you want to build.</p>
+            <Link
+              href="/dashboard/habits"
+              className="inline-flex items-center gap-2 bg-[#3C6E7A] hover:bg-[#2C5560] text-white text-xs font-semibold px-4 py-2 rounded-full transition-colors"
+            >
+              <Plus size={14} />
+              Add your first habit
             </Link>
-            .
-          </p>
+          </div>
         ) : (
           <div className="space-y-2">
             {habits.map((habit) => {

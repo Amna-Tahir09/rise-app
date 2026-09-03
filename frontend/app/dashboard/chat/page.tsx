@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send } from "lucide-react";
+import { Send, MessageCircle } from "lucide-react";
 
 interface Message {
   id: string;
@@ -33,8 +33,7 @@ function saveMessages(messages: Message[]) {
   window.dispatchEvent(new Event("rise-chat-updated"));
 }
 
-export default function FloatingChatButton() {
-  const [open, setOpen] = useState(false);
+export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>(DEFAULT_MESSAGES);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -49,8 +48,8 @@ export default function FloatingChatButton() {
   }, []);
 
   useEffect(() => {
-    if (open) scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping, open]);
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -88,45 +87,23 @@ export default function FloatingChatButton() {
   };
 
   return (
-    <>
-      {/* Floating button — toggles open/close */}
-      <button
-        onClick={() => setOpen((prev) => !prev)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[#3C6E7A] hover:bg-[#2C5560] text-white shadow-lg flex items-center justify-center transition-all z-50"
-        aria-label={open ? "Close chat" : "Open chat"}
-      >
-        {open ? <X size={22} /> : <MessageCircle size={24} />}
-      </button>
+    <div className="max-w-2xl flex flex-col h-[calc(100vh-4rem)]">
+      <div className="mb-4">
+        <h1 className="text-3xl font-serif text-stone-900 flex items-center gap-2">
+          Ask Rise <MessageCircle size={22} className="text-[#3C6E7A]" />
+        </h1>
+        <p className="text-sm text-stone-500 mt-1">Talk through what's on your mind.</p>
+      </div>
 
-      {/* Backdrop */}
-      {open && (
-        <div
-          onClick={() => setOpen(false)}
-          className="fixed inset-0 bg-black/20 z-40"
-        />
-      )}
-
-      {/* Side drawer */}
-      <div
-        className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white border-l border-stone-200 shadow-2xl z-40 flex flex-col transition-transform duration-300 ${
-          open ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-stone-200">
-          <div className="flex items-center gap-2">
-            <MessageCircle size={18} className="text-[#3C6E7A]" />
-            <span className="font-serif text-lg text-stone-900">Ask Rise</span>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+      <div className="flex-1 bg-white border border-stone-200 rounded-3xl p-6 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
           {messages.map((msg) => (
             <div
               key={msg.id}
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                   msg.role === "user"
                     ? "bg-[#3C6E7A] text-white rounded-br-sm"
                     : "bg-stone-100 text-stone-800 rounded-bl-sm"
@@ -151,24 +128,24 @@ export default function FloatingChatButton() {
           <div ref={scrollRef} />
         </div>
 
-        <div className="flex items-center gap-2 px-4 py-4 border-t border-stone-200">
+        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-stone-100">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            className="flex-1 bg-stone-100 border border-stone-200 px-4 py-2.5 rounded-full outline-none focus:border-[#3C6E7A] text-stone-800 text-sm"
+            className="flex-1 bg-stone-100 border border-stone-200 px-4 py-3 rounded-full outline-none focus:border-[#3C6E7A] text-stone-800 text-sm"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim()}
-            className="bg-[#3C6E7A] hover:bg-[#2C5560] disabled:opacity-40 disabled:cursor-not-allowed text-white p-2.5 rounded-full transition-colors flex-shrink-0"
+            className="bg-[#3C6E7A] hover:bg-[#2C5560] disabled:opacity-40 disabled:cursor-not-allowed text-white p-3 rounded-full transition-colors flex-shrink-0"
             aria-label="Send message"
           >
             <Send size={16} />
           </button>
         </div>
       </div>
-    </>
+    </div>
   );
 }

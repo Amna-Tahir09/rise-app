@@ -16,6 +16,7 @@ import {
   LogIn,
   Plus,
   Flame,
+  ArrowLeft,
 } from "lucide-react";
 import FloatingChatButton from "./_components/FloatingChatButton";
 
@@ -72,6 +73,22 @@ function calcTodayRate(): number {
   return Math.round((log.length / habits.length) * 100);
 }
 
+function calcTawbahStreak(): number {
+  let streak = 0;
+  let cursor = new Date();
+  while (true) {
+    const key = cursor.toISOString().slice(0, 10);
+    const done = localStorage.getItem(`rise_muhasaba_log_${key}`);
+    if (done) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -80,6 +97,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [streak, setStreak] = useState(0);
   const [todayRate, setTodayRate] = useState(0);
+  const [tawbahStreak, setTawbahStreak] = useState(0);
 
   useEffect(() => {
     const savedMode = localStorage.getItem("rise_mode");
@@ -87,6 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setUsername(localStorage.getItem("rise_username"));
     setStreak(calcBestStreak());
     setTodayRate(calcTodayRate());
+    setTawbahStreak(calcTawbahStreak());
 
     const handleModeChange = () => {
       const updated = localStorage.getItem("rise_mode");
@@ -95,6 +114,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const refreshStats = () => {
       setStreak(calcBestStreak());
       setTodayRate(calcTodayRate());
+      setTawbahStreak(calcTawbahStreak());
     };
     window.addEventListener("rise-mode-changed", handleModeChange);
     window.addEventListener("focus", refreshStats);
@@ -120,6 +140,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     localStorage.removeItem("rise_access_token");
     localStorage.removeItem("rise_identifier");
     localStorage.removeItem("rise_mode");
+    localStorage.removeItem("rise_guest");
     router.replace("/login");
   };
 
@@ -164,7 +185,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          {mode === "habit" && (
+          {mode === "habit" ? (
             <>
               {/* Quick add habit */}
               <Link
@@ -200,6 +221,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </div>
                   <p className="text-[10px] text-white/60 uppercase tracking-wide mt-1">{todayRate}% today</p>
                 </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Quick add muhasaba */}
+              <Link
+                href="/dashboard/muhasaba"
+                className="flex items-center justify-center gap-2 mb-4 bg-white hover:bg-stone-100 text-[#3C6E7A] text-sm font-semibold px-3 py-2.5 rounded-xl transition-colors"
+              >
+                <Plus size={16} />
+                Reflect today
+              </Link>
+
+              {/* Tawbah streak */}
+              <div className="bg-white/10 border border-white/15 rounded-xl p-3 flex items-center justify-center gap-2 mb-6">
+                <Flame className="text-white" size={16} />
+                <span className="text-lg font-serif text-white">{tawbahStreak}</span>
+                <span className="text-[10px] text-white/60 uppercase tracking-wide">Day Streak</span>
               </div>
             </>
           )}
@@ -256,15 +295,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       <main className="flex-1 p-8">
-        {!sidebarOpen && (
+        <div className="flex items-center justify-between mb-4">
+          {!sidebarOpen ? (
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="text-[#3C6E7A] p-2 bg-white rounded-xl shadow-sm border border-stone-200"
+              aria-label="Open sidebar"
+            >
+              <Menu size={20} />
+            </button>
+          ) : (
+            <span />
+          )}
+
           <button
-            onClick={() => setSidebarOpen(true)}
-            className="mb-4 text-[#3C6E7A] p-2 bg-white rounded-xl shadow-sm border border-stone-200"
-            aria-label="Open sidebar"
+            onClick={() => router.push("/mode")}
+            className="flex items-center gap-1 text-sm text-stone-500 hover:text-[#3C6E7A] transition-colors"
           >
-            <Menu size={20} />
+            <ArrowLeft size={14} />
+            Change mode
           </button>
-        )}
+        </div>
         {children}
       </main>
 

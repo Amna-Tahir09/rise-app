@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock } from "lucide-react";
 
@@ -9,6 +9,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
+
+  useEffect(() => {
+  const username = localStorage.getItem("rise_username");
+  const isGuest = localStorage.getItem("rise_guest");
+  if (username || isGuest) {
+    router.replace("/mode");
+  }
+}, [router]);
 
   const handleLogin = () => {
     if (!identifier || !password) {
@@ -19,14 +27,14 @@ export default function LoginPage() {
     localStorage.setItem("rise_identifier", identifier);
     localStorage.setItem("rise_username", identifier);
     localStorage.removeItem("rise_guest");
-    router.push("/mode");
+    router.replace("/mode");
   };
 
   const handleGuest = () => {
     localStorage.setItem("rise_guest", "true");
     localStorage.removeItem("rise_username");
     localStorage.removeItem("rise_identifier");
-    router.push("/mode");
+    router.replace("/mode");
   };
 
   return (
