@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Sprout, MessageCircle, CheckSquare, Moon } from "lucide-react";
 
 export default function HabitDashboard({
   greetingName,
@@ -21,8 +22,8 @@ export default function HabitDashboard({
     <div className="max-w-4xl">
       <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-violet-900 mb-1">
-            Welcome back{greetingName} 🌱
+          <h1 className="text-3xl font-bold text-violet-900 mb-1 flex items-center gap-2">
+            Welcome back{greetingName} <Sprout size={26} className="text-green-500" />
           </h1>
           <p className="text-gray-500">{today}</p>
         </div>
@@ -52,13 +53,13 @@ export default function HabitDashboard({
           <span className="absolute top-3 right-3 text-xs font-semibold bg-amber-300 text-amber-900 px-2 py-0.5 rounded-full">
             Featured
           </span>
-          <div className="text-2xl mb-2">💬</div>
+          <MessageCircle size={26} className="text-violet-600 mb-2" />
           <h3 className="font-semibold text-gray-800">Ask Rise</h3>
           <p className="text-sm text-gray-500">Ask why a habit keeps slipping</p>
         </a>
 
         <a href="/dashboard/habits" className="bg-white/90 backdrop-blur rounded-2xl shadow-md p-5 hover:shadow-lg transition-shadow">
-          <div className="text-2xl mb-2">✅</div>
+          <CheckSquare size={26} className="text-green-500 mb-2" />
           <h3 className="font-semibold text-gray-800">Habits Tracker</h3>
           <p className="text-sm text-gray-500">Log today habit</p>
         </a>
@@ -67,7 +68,7 @@ export default function HabitDashboard({
           onClick={switchToTazkiya}
           className="text-left bg-white/90 backdrop-blur rounded-2xl shadow-md p-5 hover:shadow-lg transition-shadow col-span-2"
         >
-          <div className="text-2xl mb-2">🌙</div>
+          <Moon size={26} className="text-violet-500 mb-2" />
           <h3 className="font-semibold text-gray-800">Try Tazkiya Mode</h3>
           <p className="text-sm text-gray-500">
             Want a spiritual self-accountability practice instead? Switch to Tazkiya.

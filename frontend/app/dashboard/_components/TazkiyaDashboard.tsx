@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Sparkles, MessageCircle, BookOpen, Activity, Shield, Sprout } from "lucide-react";
 
 export default function TazkiyaDashboard({
   greetingName,
@@ -21,8 +22,8 @@ export default function TazkiyaDashboard({
     <div className="max-w-4xl">
       <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-violet-900 mb-1">
-            Assalamu Alaikum{greetingName} ✨
+          <h1 className="text-3xl font-bold text-violet-900 mb-1 flex items-center gap-2">
+            Assalamu Alaikum{greetingName} <Sparkles size={26} className="text-amber-400" />
           </h1>
           <p className="text-gray-500">{today}</p>
         </div>
@@ -52,25 +53,25 @@ export default function TazkiyaDashboard({
           <span className="absolute top-3 right-3 text-xs font-semibold bg-amber-300 text-amber-900 px-2 py-0.5 rounded-full">
             Featured
           </span>
-          <div className="text-2xl mb-2">💬</div>
+          <MessageCircle size={26} className="text-violet-600 mb-2" />
           <h3 className="font-semibold text-gray-800">Ask Rise</h3>
           <p className="text-sm text-gray-500">Ask about a recurring struggle, grounded in your logs and classical guidance</p>
         </a>
 
         <a href="/dashboard/muhasaba" className="bg-white/90 backdrop-blur rounded-2xl shadow-md p-5 hover:shadow-lg transition-shadow">
-          <div className="text-2xl mb-2">📖</div>
+          <BookOpen size={26} className="text-blue-500 mb-2" />
           <h3 className="font-semibold text-gray-800">Daily Muhasaba</h3>
           <p className="text-sm text-gray-500">Evening self-reflection and accountability</p>
         </a>
 
         <a href="/dashboard/nafs" className="bg-white/90 backdrop-blur rounded-2xl shadow-md p-5 hover:shadow-lg transition-shadow">
-          <div className="text-2xl mb-2">💓</div>
+          <Activity size={26} className="text-rose-500 mb-2" />
           <h3 className="font-semibold text-gray-800">Nafs Tracker</h3>
           <p className="text-sm text-gray-500">Measure the 7 spiritual diseases</p>
         </a>
 
         <a href="/dashboard/tawbah" className="bg-white/90 backdrop-blur rounded-2xl shadow-md p-5 hover:shadow-lg transition-shadow">
-          <div className="text-2xl mb-2">🛡️</div>
+          <Shield size={26} className="text-sky-500 mb-2" />
           <h3 className="font-semibold text-gray-800">Tawbah</h3>
           <p className="text-sm text-gray-500">Turn back to Allah after a mistake</p>
         </a>
@@ -79,7 +80,7 @@ export default function TazkiyaDashboard({
           onClick={switchToHabit}
           className="text-left bg-white/90 backdrop-blur rounded-2xl shadow-md p-5 hover:shadow-lg transition-shadow"
         >
-          <div className="text-2xl mb-2">🌱</div>
+          <Sprout size={26} className="text-green-500 mb-2" />
           <h3 className="font-semibold text-gray-800">Try Habit Tracker</h3>
           <p className="text-sm text-gray-500">
             Want to track a general habit or goal instead? Switch to Habit Tracker.

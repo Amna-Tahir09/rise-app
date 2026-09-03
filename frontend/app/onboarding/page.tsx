@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Sprout, Moon, ArrowLeft } from "lucide-react";
 
 const HABIT_QUESTIONS = [
   "What is your main goal?",
@@ -42,41 +43,75 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-100 via-fuchsia-50 to-amber-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white/90 backdrop-blur p-8 rounded-3xl shadow-xl">
-        <button
-          onClick={() => router.back()}
-          className="text-violet-400 text-sm mb-4 flex items-center gap-1"
-        >
-          ← Back
-        </button>
-
-        <div className="text-3xl mb-2">{mode === "habit" ? "🌱" : "🌙"}</div>
-        <h1 className="text-2xl font-bold mb-1 text-violet-900">
-          {mode === "habit" ? "Habit Tracker Onboarding" : "Tazkiya Onboarding"}
-        </h1>
-        <p className="text-violet-400 mb-6">Let's get to know you a little</p>
-
-        {questions.map((q, index) => (
-          <div key={index} className="mb-4">
-            <label className="block text-sm font-medium text-violet-700 mb-1">
-              {q}
-            </label>
-            <textarea
-              className="border border-violet-200 p-3 w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-300"
-              rows={2}
-              value={answers[index]}
-              onChange={(e) => updateAnswer(index, e.target.value)}
+    <div className="min-h-screen bg-[#F7F3EC] flex flex-col items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        {/* Logo block */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-14 h-14 rounded-full overflow-hidden border border-violet-200 flex-shrink-0">
+            <img
+              src="/rise-logo.png"
+              alt="Rise logo"
+              className="w-full h-full object-cover"
             />
           </div>
-        ))}
+          <div>
+            <span className="text-2xl font-serif text-violet-900 leading-tight block">Rise</span>
+            <p className="text-xs tracking-widest text-violet-400 uppercase">
+              confront ~ grow ~ become
+            </p>
+          </div>
+        </div>
 
-        <button
-          onClick={handleSubmit}
-          className="bg-gradient-to-r from-violet-400 to-amber-300 text-white px-4 py-3 rounded-xl w-full font-medium mt-2 hover:opacity-90 transition-opacity shadow-md"
-        >
-          Continue ✨
-        </button>
+        <div className="w-full bg-[#F7F3EC] border border-stone-200 p-8 rounded-3xl shadow-sm">
+          <button
+            onClick={() => router.back()}
+            className="text-stone-400 text-sm mb-5 flex items-center gap-1 hover:text-stone-600 transition-colors"
+          >
+            <ArrowLeft size={14} />
+            Back
+          </button>
+
+          {/* Eyebrow */}
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+            <span className="text-xs font-semibold tracking-widest text-stone-400 uppercase">
+              {mode === "habit" ? "Habit tracker" : "Tazkiya"} onboarding
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 mb-3">
+            {mode === "habit" ? (
+              <Sprout className="text-violet-600" size={28} />
+            ) : (
+              <Moon className="text-violet-600" size={28} />
+            )}
+            <h1 className="text-3xl font-serif text-stone-900 leading-tight">
+              Let&apos;s get to know you.
+            </h1>
+          </div>
+          <p className="text-stone-500 mb-8">A few quick questions to start.</p>
+
+          {questions.map((q, index) => (
+            <div key={index} className="mb-5">
+              <label className="block text-sm font-semibold text-stone-700 mb-2">
+                {q}
+              </label>
+              <textarea
+                className="bg-stone-100 border border-stone-200 p-3 w-full rounded-2xl focus:outline-none focus:border-violet-300 text-stone-800"
+                rows={2}
+                value={answers[index]}
+                onChange={(e) => updateAnswer(index, e.target.value)}
+              />
+            </div>
+          ))}
+
+          <button
+            onClick={handleSubmit}
+            className="bg-[#1F3B33] hover:bg-[#183029] text-white px-4 py-3 rounded-full w-full font-semibold mt-2 transition-colors"
+          >
+            Continue
+          </button>
+        </div>
       </div>
     </div>
   );
