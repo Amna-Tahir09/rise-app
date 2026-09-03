@@ -14,7 +14,10 @@ import {
   Menu,
   LogOut,
   LogIn,
+  Plus,
+  Flame,
 } from "lucide-react";
+import FloatingChatButton from "./_components/FloatingChatButton";
 
 const HABIT_NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
@@ -30,18 +33,75 @@ const TAZKIYA_NAV_ITEMS = [
   { href: "/dashboard/chat", label: "Ask Rise", icon: MessageCircle },
 ];
 
+const todayKey = () => new Date().toISOString().slice(0, 10);
+
+function calcBestStreak(): number {
+  const habits: { id: string }[] = JSON.parse(localStorage.getItem("rise_habits_list") || "[]");
+  let best = 0;
+
+  habits.forEach((habit) => {
+    let streak = 0;
+    let cursor = new Date();
+    let skippedToday = false;
+
+    while (true) {
+      const key = cursor.toISOString().slice(0, 10);
+      const log: string[] = JSON.parse(localStorage.getItem(`rise_habit_log_${key}`) || "[]");
+      const done = log.includes(habit.id);
+
+      if (done) {
+        streak++;
+        cursor.setDate(cursor.getDate() - 1);
+      } else if (!skippedToday && key === todayKey()) {
+        skippedToday = true;
+        cursor.setDate(cursor.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    best = Math.max(best, streak);
+  });
+
+  return best;
+}
+
+function calcTodayRate(): number {
+  const habits: { id: string }[] = JSON.parse(localStorage.getItem("rise_habits_list") || "[]");
+  if (!habits.length) return 0;
+  const log: string[] = JSON.parse(localStorage.getItem(`rise_habit_log_${todayKey()}`) || "[]");
+  return Math.round((log.length / habits.length) * 100);
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mode, setMode] = useState("habit");
   const [username, setUsername] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [streak, setStreak] = useState(0);
+  const [todayRate, setTodayRate] = useState(0);
 
   useEffect(() => {
     const savedMode = localStorage.getItem("rise_mode");
     if (savedMode) setMode(savedMode);
-
     setUsername(localStorage.getItem("rise_username"));
+    setStreak(calcBestStreak());
+    setTodayRate(calcTodayRate());
+
+    const handleModeChange = () => {
+      const updated = localStorage.getItem("rise_mode");
+      if (updated) setMode(updated);
+    };
+    const refreshStats = () => {
+      setStreak(calcBestStreak());
+      setTodayRate(calcTodayRate());
+    };
+    window.addEventListener("rise-mode-changed", handleModeChange);
+    window.addEventListener("focus", refreshStats);
+    return () => {
+      window.removeEventListener("rise-mode-changed", handleModeChange);
+      window.removeEventListener("focus", refreshStats);
+    };
   }, []);
 
   const navItems = mode === "habit" ? HABIT_NAV_ITEMS : TAZKIYA_NAV_ITEMS;
@@ -72,32 +132,77 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isLoggedIn = !!username;
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-violet-50 via-fuchsia-50 to-amber-50">
+    <div className="min-h-screen flex bg-[#F7F3EC]">
       {sidebarOpen && (
-        <aside className="w-64 bg-violet-950 text-white p-6 flex-shrink-0 flex flex-col">
+        <aside className="w-64 bg-[#2C5560] p-6 flex-shrink-0 flex flex-col">
           <div className="flex items-center justify-between mb-1">
-            <h1 className="text-2xl font-bold text-amber-300">Rise</h1>
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-full overflow-hidden border border-white/30 flex-shrink-0">
+                <img src="/rise-logo.png" alt="Rise logo" className="w-full h-full object-cover" />
+              </div>
+              <span className="text-xl font-serif text-white">Rise</span>
+            </div>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="text-violet-300 hover:text-white p-1"
+              className="text-white/60 hover:text-white p-1"
               aria-label="Close sidebar"
             >
               <Menu size={20} />
             </button>
           </div>
-          <p className="text-sm text-violet-300 mb-8">confront ~ grow ~ become</p>
+          <p className="text-xs tracking-widest text-white/60 uppercase mb-6 ml-11">
+            confront ~ grow ~ become
+          </p>
 
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-full bg-amber-300 text-violet-900 font-bold flex items-center justify-center flex-shrink-0">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-full bg-white/15 text-white font-bold flex items-center justify-center flex-shrink-0">
               {initial}
             </div>
             <div>
-              <p className="font-semibold text-sm">{displayName}</p>
-              <p className="text-xs text-violet-300">
-                {isLoggedIn ? "Seeker of Light" : "Exploring"}
-              </p>
+              <p className="font-semibold text-sm text-white">{displayName}</p>
+              <p className="text-xs text-white/60">{isLoggedIn ? "Seeker of Light" : "Exploring"}</p>
             </div>
           </div>
+
+          {mode === "habit" && (
+            <>
+              {/* Quick add habit */}
+              <Link
+                href="/dashboard/habits"
+                className="flex items-center justify-center gap-2 mb-4 bg-white hover:bg-stone-100 text-[#3C6E7A] text-sm font-semibold px-3 py-2.5 rounded-xl transition-colors"
+              >
+                <Plus size={16} />
+                Add habit
+              </Link>
+
+              {/* Streak + progress */}
+              <div className="grid grid-cols-2 gap-2 mb-6">
+                <div className="bg-white/10 border border-white/15 rounded-xl p-3 flex flex-col items-center">
+                  <Flame className="text-white" size={16} />
+                  <p className="text-lg font-serif text-white mt-1">{streak}</p>
+                  <p className="text-[10px] text-white/60 uppercase tracking-wide">Streak</p>
+                </div>
+                <div className="bg-white/10 border border-white/15 rounded-xl p-3 flex flex-col items-center justify-center">
+                  <div className="relative w-9 h-9">
+                    <svg viewBox="0 0 36 36" className="w-9 h-9 -rotate-90">
+                      <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="4" />
+                      <circle
+                        cx="18"
+                        cy="18"
+                        r="15"
+                        fill="none"
+                        stroke="#FFFFFF"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeDasharray={`${(todayRate / 100) * 94} 94`}
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-[10px] text-white/60 uppercase tracking-wide mt-1">{todayRate}% today</p>
+                </div>
+              </div>
+            </>
+          )}
 
           <nav className="space-y-1 flex-1">
             {navItems.map((item) => {
@@ -109,8 +214,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   href={item.href}
                   className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${
                     active
-                      ? "bg-violet-800 text-amber-300 font-semibold"
-                      : "text-violet-200 hover:bg-violet-900"
+                      ? "bg-white/15 text-white font-semibold"
+                      : "text-white/70 hover:bg-white/10"
                   }`}
                 >
                   <Icon size={18} />
@@ -122,29 +227,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <button
             onClick={switchMode}
-            className="mt-6 flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-violet-200 border border-violet-700 hover:bg-violet-900 transition-all"
+            className="mt-6 flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-white/80 border border-white/25 hover:bg-white/10 transition-all"
           >
             <Compass size={16} />
             {mode === "habit" ? "Switch to Tazkiya" : "Switch to Habit Tracker"}
           </button>
 
-          {isLoggedIn ? (
-            <button
-              onClick={handleSignOut}
-              className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-red-300 hover:bg-red-950/40 transition-all"
-            >
-              <LogOut size={16} />
-              Sign Out
-            </button>
-          ) : (
-            <button
-              onClick={handleSignIn}
-              className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-amber-300 hover:bg-amber-950/20 transition-all"
-            >
-              <LogIn size={16} />
-              Sign In
-            </button>
-          )}
+          <div className="mt-4 pt-4 border-t border-white/20">
+            {isLoggedIn ? (
+              <button
+                onClick={handleSignOut}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-red-200 hover:bg-red-500/10 transition-all"
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
+            ) : (
+              <button
+                onClick={handleSignIn}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-white hover:bg-white/10 transition-all"
+              >
+                <LogIn size={16} />
+                Sign In
+              </button>
+            )}
+          </div>
         </aside>
       )}
 
@@ -152,7 +259,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {!sidebarOpen && (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="mb-4 text-violet-700 p-2 bg-white/90 rounded-xl shadow-md"
+            className="mb-4 text-[#3C6E7A] p-2 bg-white rounded-xl shadow-sm border border-stone-200"
             aria-label="Open sidebar"
           >
             <Menu size={20} />
@@ -160,6 +267,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
         {children}
       </main>
+
+      <FloatingChatButton />
     </div>
   );
 }
