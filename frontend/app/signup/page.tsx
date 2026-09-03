@@ -12,13 +12,12 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const router = useRouter();
 
- useEffect(() => {
-  const username = localStorage.getItem("rise_username");
-  const isGuest = localStorage.getItem("rise_guest");
-  if (username || isGuest) {
-    router.replace("/mode");
-  }
-}, [router]);
+  useEffect(() => {
+    const username = localStorage.getItem("rise_username");
+    if (username) {
+      router.replace("/mode");
+    }
+  }, [router]);
 
   const handleSignup = () => {
     if (!name || !email || !password || !confirmPassword) {

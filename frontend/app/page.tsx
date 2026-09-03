@@ -8,9 +8,8 @@ export default function RootPage() {
 
   useEffect(() => {
     const username = localStorage.getItem("rise_username");
-    const isGuest = localStorage.getItem("rise_guest");
 
-    if (username || isGuest) {
+    if (username) {
       router.replace("/mode");
     } else {
       router.replace("/login");

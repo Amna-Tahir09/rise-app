@@ -145,6 +145,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const handleSignIn = () => {
+    localStorage.removeItem("rise_guest");
     router.push("/login");
   };
 

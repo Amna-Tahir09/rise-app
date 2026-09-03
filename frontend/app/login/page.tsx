@@ -11,12 +11,11 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-  const username = localStorage.getItem("rise_username");
-  const isGuest = localStorage.getItem("rise_guest");
-  if (username || isGuest) {
-    router.replace("/mode");
-  }
-}, [router]);
+    const username = localStorage.getItem("rise_username");
+    if (username) {
+      router.replace("/mode");
+    }
+  }, [router]);
 
   const handleLogin = () => {
     if (!identifier || !password) {
