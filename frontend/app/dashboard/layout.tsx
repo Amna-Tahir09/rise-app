@@ -98,8 +98,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [streak, setStreak] = useState(0);
   const [todayRate, setTodayRate] = useState(0);
   const [tawbahStreak, setTawbahStreak] = useState(0);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+
     const savedMode = localStorage.getItem("rise_mode");
     if (savedMode) setMode(savedMode);
     setUsername(localStorage.getItem("rise_username"));
@@ -123,6 +126,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       window.removeEventListener("focus", refreshStats);
     };
   }, []);
+
+  // Fix: Tazkiya streak wasn't syncing between the dashboard page and this
+  // sidebar, because layout.tsx doesn't remount on navigation. Recalculate
+  // whenever the route changes so the sidebar number stays in sync.
+  useEffect(() => {
+    if (!mounted) return;
+    setStreak(calcBestStreak());
+    setTodayRate(calcTodayRate());
+    setTawbahStreak(calcTawbahStreak());
+  }, [pathname, mounted]);
 
   const navItems = mode === "habit" ? HABIT_NAV_ITEMS : TAZKIYA_NAV_ITEMS;
 
@@ -153,9 +166,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const initial = username ? username[0].toUpperCase() : "G";
   const isLoggedIn = !!username;
 
+  // Fix: hydration mismatch. Server always rendered the sidebar (since
+  // sidebarOpen starts true), but if we ever conditionally hid it before
+  // mount, server/client output would differ. Rendering unconditionally
+  // like this, with sidebarOpen simply controlling visibility via the
+  // "hidden" guard below, keeps server and client markup identical on
+  // first paint while still letting the toggle work normally after mount.
+  const showSidebar = !mounted || sidebarOpen;
+
   return (
     <div className="min-h-screen flex bg-[#F7F3EC]">
-      {sidebarOpen && (
+      {showSidebar && (
         <aside className="w-64 bg-[#2C5560] p-6 flex-shrink-0 flex flex-col">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
@@ -297,7 +318,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <main className="flex-1 p-8">
         <div className="flex items-center justify-between mb-4">
-          {!sidebarOpen ? (
+          {mounted && !sidebarOpen ? (
             <button
               onClick={() => setSidebarOpen(true)}
               className="text-[#3C6E7A] p-2 bg-white rounded-xl shadow-sm border border-stone-200"
