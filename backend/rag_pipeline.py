@@ -15,10 +15,12 @@ def answer_question(user_id: int, mode: str, question: str) -> str:
     if mode == "tazkiya":
         classical_results = retrieve_classical_texts(query=question, top_k=3)
         classical_matches = classical_results.get("matches", [])
-        if classical_matches:
+        # Only keep genuinely close matches — filters out loosely related passages
+        relevant_matches = [m for m in classical_matches if m.get("score", 0) >= 0.35]
+        if relevant_matches:
             classical_context = "\n".join(
                 f"- {m['metadata']['text']} (Source: {m['metadata'].get('source', 'Unknown')})"
-                for m in classical_matches
+                for m in relevant_matches
             )
 
     context_parts = []
