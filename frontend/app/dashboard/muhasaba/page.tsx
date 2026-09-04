@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Moon } from "lucide-react";
+import Link from "next/link";
+import { Moon, ArrowLeft } from "lucide-react";
 
 const FIELDS = [
   {
@@ -45,7 +46,6 @@ export default function MuhasabaPage() {
     const payload = { date: today, reflection_text };
     localStorage.setItem("rise_last_muhasaba", JSON.stringify(payload));
     localStorage.setItem(`rise_muhasaba_log_${today}`, "true");
-    console.log("Saved:", payload);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -53,8 +53,16 @@ export default function MuhasabaPage() {
   const filled = FIELDS.filter((f) => answers[f.key].trim()).length;
 
   return (
-    <div className="max-w-2xl">
-      <div className="bg-white border border-stone-200 p-8 rounded-3xl shadow-sm">
+    <div className="max-w-2xl mx-auto w-full px-1 sm:px-0">
+      <Link
+        href="/dashboard"
+        className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-[#3C6E7A] transition-colors mb-4"
+      >
+        <ArrowLeft size={14} />
+        Back to dashboard
+      </Link>
+
+      <div className="bg-white border border-stone-200 p-5 sm:p-8 rounded-3xl shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <span className="w-1.5 h-1.5 rounded-full bg-[#3C6E7A]" />
           <span className="text-xs font-semibold tracking-widest text-stone-400 uppercase">
@@ -62,8 +70,8 @@ export default function MuhasabaPage() {
           </span>
         </div>
 
-        <h1 className="text-3xl font-serif text-stone-900 mb-1 flex items-center gap-2">
-          Daily Muhasaba <Moon size={22} className="text-[#3C6E7A]" />
+        <h1 className="text-2xl sm:text-3xl font-serif text-stone-900 mb-1 flex items-center gap-2">
+          Daily Muhasaba <Moon size={20} className="text-[#3C6E7A]" />
         </h1>
         <p className="text-sm text-stone-500 mb-1">{today}</p>
         <p className="text-sm text-stone-400 mb-8">

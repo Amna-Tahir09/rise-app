@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, MessageCircle } from "lucide-react";
+import Link from "next/link";
+import { Send, MessageCircle, ArrowLeft } from "lucide-react";
 
 interface Message {
   id: string;
@@ -87,15 +88,23 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="max-w-2xl flex flex-col h-[calc(100vh-4rem)]">
-      <div className="mb-4">
-        <h1 className="text-3xl font-serif text-stone-900 flex items-center gap-2">
-          Ask Rise <MessageCircle size={22} className="text-[#3C6E7A]" />
+    <div className="max-w-2xl mx-auto w-full px-1 sm:px-0 flex flex-col h-[calc(100vh-6rem)] sm:h-[calc(100vh-4rem)]">
+      <Link
+        href="/dashboard"
+        className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-[#3C6E7A] transition-colors mb-3"
+      >
+        <ArrowLeft size={14} />
+        Back to dashboard
+      </Link>
+
+      <div className="mb-3 sm:mb-4">
+        <h1 className="text-2xl sm:text-3xl font-serif text-stone-900 flex items-center gap-2">
+          Ask Rise <MessageCircle size={20} className="text-[#3C6E7A]" />
         </h1>
         <p className="text-sm text-stone-500 mt-1">Talk through what's on your mind.</p>
       </div>
 
-      <div className="flex-1 bg-white border border-stone-200 rounded-3xl p-6 flex flex-col overflow-hidden">
+      <div className="flex-1 bg-white border border-stone-200 rounded-3xl p-4 sm:p-6 flex flex-col overflow-hidden min-h-0">
         <div className="flex-1 overflow-y-auto space-y-4 pr-1">
           {messages.map((msg) => (
             <div
@@ -103,7 +112,7 @@ export default function ChatPage() {
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                className={`max-w-[85%] sm:max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                   msg.role === "user"
                     ? "bg-[#3C6E7A] text-white rounded-br-sm"
                     : "bg-stone-100 text-stone-800 rounded-bl-sm"
@@ -134,7 +143,7 @@ export default function ChatPage() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            className="flex-1 bg-stone-100 border border-stone-200 px-4 py-3 rounded-full outline-none focus:border-[#3C6E7A] text-stone-800 text-sm"
+            className="flex-1 bg-stone-100 border border-stone-200 px-4 py-3 rounded-full outline-none focus:border-[#3C6E7A] text-stone-800 text-sm min-w-0"
           />
           <button
             onClick={handleSend}

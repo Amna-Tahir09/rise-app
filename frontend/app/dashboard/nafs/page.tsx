@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Activity } from "lucide-react";
+import Link from "next/link";
+import { Activity, ArrowLeft } from "lucide-react";
 
 const NAFS_ITEMS = [
   {
@@ -78,8 +79,16 @@ export default function NafsPage() {
   const totalScore = Object.values(ratings).reduce((sum, v) => sum + v, 0);
 
   return (
-    <div className="max-w-2xl">
-      <div className="bg-white border border-stone-200 p-8 rounded-3xl shadow-sm">
+    <div className="max-w-2xl mx-auto w-full px-1 sm:px-0">
+      <Link
+        href="/dashboard"
+        className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-[#3C6E7A] transition-colors mb-4"
+      >
+        <ArrowLeft size={14} />
+        Back to dashboard
+      </Link>
+
+      <div className="bg-white border border-stone-200 p-5 sm:p-8 rounded-3xl shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <span className="w-1.5 h-1.5 rounded-full bg-[#3C6E7A]" />
           <span className="text-xs font-semibold tracking-widest text-stone-400 uppercase">
@@ -87,8 +96,8 @@ export default function NafsPage() {
           </span>
         </div>
 
-        <h1 className="text-3xl font-serif text-stone-900 mb-1 flex items-center gap-2">
-          Nafs Tracker <Activity size={22} className="text-[#3C6E7A]" />
+        <h1 className="text-2xl sm:text-3xl font-serif text-stone-900 mb-1 flex items-center gap-2">
+          Nafs Tracker <Activity size={20} className="text-[#3C6E7A]" />
         </h1>
         <p className="text-sm text-stone-500 mb-1">{today}</p>
         <p className="text-sm text-stone-400 mb-8">
@@ -97,7 +106,7 @@ export default function NafsPage() {
 
         {NAFS_ITEMS.map((item) => (
           <div key={item.key} className="mb-6 pb-6 border-b border-stone-100 last:border-0 last:pb-0 last:mb-0">
-            <div className="flex items-baseline justify-between mb-1">
+            <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 mb-1">
               <div>
                 <span className="text-sm font-semibold text-stone-800">{item.label}</span>
                 <span className="text-xs text-stone-400 ml-2">{item.subtitle}</span>
@@ -108,12 +117,12 @@ export default function NafsPage() {
             </div>
             <p className="text-xs text-stone-500 mb-3">{item.description}</p>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {[0, 1, 2, 3, 4, 5].map((val) => (
                 <button
                   key={val}
                   onClick={() => setRating(item.key, val)}
-                  className={`w-9 h-9 rounded-full text-sm font-medium transition-all ${
+                  className={`w-9 h-9 rounded-full text-sm font-medium transition-all flex-shrink-0 ${
                     ratings[item.key] === val
                       ? "bg-[#3C6E7A] text-white"
                       : "bg-stone-100 text-stone-500 hover:bg-stone-200"
