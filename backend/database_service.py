@@ -3,7 +3,7 @@ from models import User, OnboardingAnswer, HabitLog, MuhasabaLog
 from security import hash_password, verify_password
 
 
-def create_user(email: str, mode: str, user_name: str = None):
+def create_user(email: str, password: str, mode: str, user_name: str = None):
     db = SessionLocal()
     hashed_pw = hash_password(password)
     user = User(email=email, mode=mode, user_name=user_name, password_hash=hashed_pw)
