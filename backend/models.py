@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, JSON
 from datetime import datetime
-from db import Base
+from backend.db import Base  
 
 
 class User(Base):
@@ -10,7 +10,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     user_name = Column(String)
     password_hash = Column(String)
-    mode = Column(String)  # "habit_tracker" or "tazkiya"
+    mode = Column(String, nullable = True)  # "habit_tracker" or "tazkiya"
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -19,6 +19,7 @@ class OnboardingAnswer(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    mode = Column(String)
     question = Column(String)
     answer = Column(String)
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Sprout, Moon } from "lucide-react";
 
 export default function ModePage() {
   const [mode, setMode] = useState("habit");
@@ -13,45 +14,47 @@ export default function ModePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-100 via-fuchsia-50 to-amber-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white/90 backdrop-blur p-8 rounded-3xl shadow-xl">
-        <h1 className="text-3xl font-bold mb-1 text-violet-900">Choose your path</h1>
-        <p className="text-violet-400 mb-6">You can change this later in settings</p>
-
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <button
-            onClick={() => setMode("habit")}
-            className={`p-6 rounded-2xl border-2 text-left transition-all ${
-              mode === "habit"
-                ? "border-amber-400 bg-amber-50 shadow-md"
-                : "border-violet-100 bg-white hover:border-violet-200"
-            }`}
-          >
-            <div className="text-2xl mb-1">🌱</div>
-            <h3 className="font-semibold text-amber-700">Habit Tracker</h3>
-            <p className="text-sm text-gray-500">Track any habit or goal</p>
-          </button>
-
-          <button
-            onClick={() => setMode("tazkiya")}
-            className={`p-6 rounded-2xl border-2 text-left transition-all ${
-              mode === "tazkiya"
-                ? "border-violet-400 bg-violet-50 shadow-md"
-                : "border-violet-100 bg-white hover:border-violet-200"
-            }`}
-          >
-            <div className="text-2xl mb-1">🌙</div>
-            <h3 className="font-semibold text-violet-700">Tazkiya</h3>
-            <p className="text-sm text-gray-500">Islamic self-accountability</p>
-          </button>
+    <div className="min-h-screen bg-[#F7F3EC] flex flex-col items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        <div className="flex items-center justify-center gap-3 mb-8">
+          <div className="w-14 h-14 rounded-full overflow-hidden border border-[#3C6E7A]/20 flex-shrink-0">
+            <img src="/rise-logo.png" alt="Rise logo" className="w-full h-full object-cover" />
+          </div>
+          <div>
+            <span className="text-2xl font-serif leading-tight block bg-gradient-to-r from-[#1C1917] to-[#3C6E7A] bg-clip-text text-transparent">
+              Rise
+            </span>
+            <p className="text-xs tracking-widest text-stone-400 uppercase">confront ~ grow ~ become</p>
+          </div>
         </div>
 
-        <button
-          onClick={handleContinue}
-          className="bg-gradient-to-r from-violet-400 via-fuchsia-300 to-amber-300 text-white px-4 py-3 rounded-xl w-full font-medium hover:opacity-90 transition-opacity shadow-md"
-        >
-          Continue ✨
-        </button>
+        <div className="w-full bg-white border border-stone-200 p-8 rounded-3xl shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#3C6E7A]" />
+            <span className="text-xs font-semibold tracking-widest text-stone-400 uppercase">Choose your path</span>
+          </div>
+
+          <h1 className="text-4xl font-serif text-stone-900 mb-3 leading-tight">How will you rise?</h1>
+          <p className="text-stone-500 mb-8">You can change this later in settings.</p>
+
+          <div className="grid grid-cols-2 gap-4 mb-7">
+            <button onClick={() => setMode("habit")} className={`p-6 rounded-2xl border-2 text-left transition-all ${mode === "habit" ? "border-[#3C6E7A] bg-[#3C6E7A]/10" : "border-stone-200 bg-stone-50 hover:border-stone-300"}`}>
+              <Sprout className={mode === "habit" ? "text-[#3C6E7A]" : "text-stone-400"} size={24} />
+              <h3 className="font-semibold text-stone-800 mt-3">Habit Tracker</h3>
+              <p className="text-sm text-stone-500">Track any habit or goal</p>
+            </button>
+
+            <button onClick={() => setMode("tazkiya")} className={`p-6 rounded-2xl border-2 text-left transition-all ${mode === "tazkiya" ? "border-[#3C6E7A] bg-[#3C6E7A]/10" : "border-stone-200 bg-stone-50 hover:border-stone-300"}`}>
+              <Moon className={mode === "tazkiya" ? "text-[#3C6E7A]" : "text-stone-400"} size={24} />
+              <h3 className="font-semibold text-stone-800 mt-3">Tazkiya</h3>
+              <p className="text-sm text-stone-500">Islamic self-accountability</p>
+            </button>
+          </div>
+
+          <button onClick={handleContinue} className="bg-[#3C6E7A] hover:bg-[#2C5560] text-white px-4 py-3 rounded-full w-full font-semibold transition-colors">
+            Continue
+          </button>
+        </div>
       </div>
     </div>
   );

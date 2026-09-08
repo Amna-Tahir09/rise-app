@@ -3,7 +3,7 @@ from models import User, OnboardingAnswer, HabitLog, MuhasabaLog
 from security import hash_password, verify_password
 
 
-def create_user(email: str, mode: str, user_name: str = None):
+def create_user(email: str, password: str, mode: str, user_name: str = None):
     db = SessionLocal()
     hashed_pw = hash_password(password)
     user = User(email=email, mode=mode, user_name=user_name, password_hash=hashed_pw)
@@ -22,9 +22,9 @@ def authenticate_user(email: str, password: str):
     return None
 
 
-def save_onboarding_answer(user_id: int, question: str, answer: str):
+def save_onboarding_answer(user_id: int, mode: str, question: str, answer: str):
     db = SessionLocal()
-    entry = OnboardingAnswer(user_id=user_id, question=question, answer=answer)
+    entry = OnboardingAnswer(user_id=user_id, mode = mode, question=question, answer=answer)
     db.add(entry)
     db.commit()
     db.refresh(entry)
@@ -59,8 +59,11 @@ def get_user_logs(user_id: int):
     return logs
 
 
-def get_onboarding_answers(user_id: int):
+def get_onboarding_answers(user_id: int, mode: str = None):
     db = SessionLocal()
-    answers = db.query(OnboardingAnswer).filter(OnboardingAnswer.user_id == user_id).all()
+    query = db.query(OnboardingAnswer).filter(OnboardingAnswer.user_id == user_id)
+    if mode:
+        query = query.filter(OnboardingAnswer.mode == mode)
+    answers = query.all()
     db.close()
     return answers
