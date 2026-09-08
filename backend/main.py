@@ -138,6 +138,7 @@ class OnboardingAnswerIn(BaseModel):
 
 class OnboardingRequest(BaseModel):
     user_id: int
+    mode: str
     answers: list[OnboardingAnswerIn]
 
 @app.post("/onboarding", status_code=201)
@@ -149,9 +150,13 @@ def save_onboarding(
     if current_user.id != data.user_id:
         raise HTTPException(status_code=403, detail="Not authorized for this user")
 
+    if data.mode not in ("habit", "tazkiya"):
+        raise HTTPException(status_code=422, detail="Invalid mode")
+
     for a in data.answers:
         db.add(OnboardingAnswer(
             user_id=data.user_id,
+            mode=data.mode,
             question=a.question,
             answer=a.answer
         ))
