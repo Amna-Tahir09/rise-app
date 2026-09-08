@@ -10,13 +10,13 @@ index = pc.Index("rise-index")
 def store_log(user_id: int, mode: str, text: str, log_type: str = "log"):
     vector = embed_text(text)
     vector_id = str(uuid.uuid4())
+    safe_mode = mode if mode is not None else "unknown"
     index.upsert(vectors=[{
         "id": vector_id,
         "values": vector,
-        "metadata": {"user_id": user_id, "mode": mode, "type": log_type, "text": text}
+        "metadata": {"user_id": user_id, "mode": safe_mode, "type": log_type, "text": text}
     }])
     return vector_id
-
 def retrieve_logs(user_id: int, mode: str, query: str, top_k: int = 5):
     query_vector = embed_text(query)
     results = index.query(
