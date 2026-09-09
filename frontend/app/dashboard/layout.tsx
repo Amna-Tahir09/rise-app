@@ -127,9 +127,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
   }, []);
 
-  // Fix: Tazkiya streak wasn't syncing between the dashboard page and this
-  // sidebar, because layout.tsx doesn't remount on navigation. Recalculate
-  // whenever the route changes so the sidebar number stays in sync.
   useEffect(() => {
     if (!mounted) return;
     setStreak(calcBestStreak());
@@ -147,11 +144,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push("/dashboard");
   };
 
+  // FIXED: was removing "rise_access_token" and "rise_identifier", which are
+  // never set anywhere in the app. The real token key is "rise_token" — it
+  // was never being cleared on sign out, so the stale token stayed in
+  // localStorage and silently logged users back in on next visit to /login.
+  // Also dropped "rise_user_id" — nothing sets that key either.
   const handleSignOut = () => {
-    localStorage.removeItem("rise_user_id");
+    localStorage.removeItem("rise_token");
     localStorage.removeItem("rise_username");
-    localStorage.removeItem("rise_access_token");
-    localStorage.removeItem("rise_identifier");
     localStorage.removeItem("rise_mode");
     localStorage.removeItem("rise_guest");
     router.replace("/login");
@@ -166,12 +166,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const initial = username ? username[0].toUpperCase() : "G";
   const isLoggedIn = !!username;
 
-  // Fix: hydration mismatch. Server always rendered the sidebar (since
-  // sidebarOpen starts true), but if we ever conditionally hid it before
-  // mount, server/client output would differ. Rendering unconditionally
-  // like this, with sidebarOpen simply controlling visibility via the
-  // "hidden" guard below, keeps server and client markup identical on
-  // first paint while still letting the toggle work normally after mount.
   const showSidebar = !mounted || sidebarOpen;
 
   return (
@@ -209,7 +203,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {mode === "habit" ? (
             <>
-              {/* Quick add habit */}
               <Link
                 href="/dashboard/habits"
                 className="flex items-center justify-center gap-2 mb-4 bg-white hover:bg-stone-100 text-[#3C6E7A] text-sm font-semibold px-3 py-2.5 rounded-xl transition-colors"
@@ -218,7 +211,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 Add habit
               </Link>
 
-              {/* Streak + progress */}
               <div className="grid grid-cols-2 gap-2 mb-6">
                 <div className="bg-white/10 border border-white/15 rounded-xl p-3 flex flex-col items-center">
                   <Flame className="text-white" size={16} />
@@ -247,7 +239,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </>
           ) : (
             <>
-              {/* Quick add muhasaba */}
               <Link
                 href="/dashboard/muhasaba"
                 className="flex items-center justify-center gap-2 mb-4 bg-white hover:bg-stone-100 text-[#3C6E7A] text-sm font-semibold px-3 py-2.5 rounded-xl transition-colors"
@@ -256,7 +247,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 Reflect today
               </Link>
 
-              {/* Tawbah streak */}
               <div className="bg-white/10 border border-white/15 rounded-xl p-3 flex items-center justify-center gap-2 mb-6">
                 <Flame className="text-white" size={16} />
                 <span className="text-lg font-serif text-white">{tawbahStreak}</span>

@@ -4,22 +4,25 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, User } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const username = localStorage.getItem("rise_username");
-    if (username) {
+    const token = localStorage.getItem("rise_token");
+    if (token) {
       router.replace("/mode");
     }
   }, [router]);
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!name || !email || !password || !confirmPassword) {
       setError("Please fill in all fields.");
       return;
@@ -33,14 +36,41 @@ export default function SignupPage() {
       return;
     }
     setError("");
-    localStorage.setItem("rise_username", name);
-    localStorage.removeItem("rise_guest");
-    localStorage.setItem("rise_email", email);
-    router.replace("/mode");
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.detail || "Signup failed. Please try again.");
+      }
+
+      const data = await res.json();
+      localStorage.setItem("rise_token", data.access_token);
+      localStorage.setItem("rise_username", name);
+      localStorage.removeItem("rise_guest");
+
+      router.replace("/mode");
+    } catch (err: any) {
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // FIXED: now clears rise_username and rise_token too, matching Login's
+  // handleGuest. Previously a logged-in user who hit "Continue as guest"
+  // would keep their old token/username sitting in localStorage alongside
+  // the new rise_guest flag — inconsistent state.
   const handleGuest = () => {
     localStorage.setItem("rise_guest", "true");
+    localStorage.removeItem("rise_username");
+    localStorage.removeItem("rise_token");
     router.replace("/mode");
   };
 
@@ -73,30 +103,30 @@ export default function SignupPage() {
           <label className="block text-sm font-semibold text-stone-700 mb-2">Name</label>
           <div className="relative mb-5">
             <User className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
-            <input className="bg-stone-100 border border-stone-200 pl-11 pr-4 py-3 w-full rounded-full focus:outline-none focus:border-[#3C6E7A] text-stone-800" value={name} onChange={(e) => setName(e.target.value)} />
+            <input className="bg-stone-100 border border-stone-200 pl-11 pr-4 py-3 w-full rounded-full focus:outline-none focus:border-[#3C6E7A] text-stone-800" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} />
           </div>
 
           <label className="block text-sm font-semibold text-stone-700 mb-2">Email</label>
           <div className="relative mb-5">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
-            <input className="bg-stone-100 border border-stone-200 pl-11 pr-4 py-3 w-full rounded-full focus:outline-none focus:border-[#3C6E7A] text-stone-800" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input className="bg-stone-100 border border-stone-200 pl-11 pr-4 py-3 w-full rounded-full focus:outline-none focus:border-[#3C6E7A] text-stone-800" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
           </div>
 
           <label className="block text-sm font-semibold text-stone-700 mb-2">Password</label>
           <div className="relative mb-1">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
-            <input type="password" className="bg-stone-100 border border-stone-200 pl-11 pr-4 py-3 w-full rounded-full focus:outline-none focus:border-[#3C6E7A] text-stone-800" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <input type="password" className="bg-stone-100 border border-stone-200 pl-11 pr-4 py-3 w-full rounded-full focus:outline-none focus:border-[#3C6E7A] text-stone-800" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} />
           </div>
           <p className="text-xs text-[#3C6E7A] mb-5">At least 6 characters.</p>
 
           <label className="block text-sm font-semibold text-stone-700 mb-2">Confirm Password</label>
           <div className="relative mb-7">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
-            <input type="password" className="bg-stone-100 border border-stone-200 pl-11 pr-4 py-3 w-full rounded-full focus:outline-none focus:border-[#3C6E7A] text-stone-800" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            <input type="password" className="bg-stone-100 border border-stone-200 pl-11 pr-4 py-3 w-full rounded-full focus:outline-none focus:border-[#3C6E7A] text-stone-800" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={loading} />
           </div>
 
-          <button onClick={handleSignup} className="bg-[#3C6E7A] hover:bg-[#2C5560] text-white px-4 py-3 rounded-full w-full font-semibold transition-colors">
-            Create account
+          <button onClick={handleSignup} disabled={loading} className="bg-[#3C6E7A] hover:bg-[#2C5560] text-white px-4 py-3 rounded-full w-full font-semibold transition-colors disabled:opacity-60">
+            {loading ? "Creating account..." : "Create account"}
           </button>
 
           <p className="text-center text-sm text-stone-500 mt-6">
