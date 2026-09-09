@@ -1,82 +1,102 @@
+
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { Shield, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Shield } from "lucide-react";
+
+const todayKey = () => new Date().toISOString().slice(0, 10);
+const getUserId = () => localStorage.getItem("rise_user_id") || "";
+const getToken = () => localStorage.getItem("rise_access_token") || "";
 
 export default function TawbahPage() {
   const [regret, setRegret] = useState("");
   const [intention, setIntention] = useState("");
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const today = new Date().toISOString().split("T")[0];
+  const router = useRouter();
 
-  const handleSave = () => {
-    const payload = { date: today, regret, intention };
+  useEffect(() => {
+    const last = JSON.parse(localStorage.getItem("rise_last_tawbah") || "{}");
+    if (last?.date === todayKey()) {
+      setRegret(last.regret || "");
+      setIntention(last.intention || "");
+    }
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const payload = { date: todayKey(), regret, intention };
     localStorage.setItem("rise_last_tawbah", JSON.stringify(payload));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+
+    // CONFIRM: is tawbah stored via the same /muhasaba-log endpoint (as part of
+    // reflection_text or a dedicated field), or does it need its own route?
+    try {
+      await fetch("https://occupier-squall-handmade.ngrok-free.dev/muhasaba-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({
+          user_id: getUserId(),
+          date: todayKey(),
+          reflection_text: JSON.stringify({ tawbah_regret: regret, tawbah_intention: intention }),
+        }),
+      });
+      setSaved(true);
+    } catch (err) {
+      console.error("Failed to sync tawbah to server:", err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="max-w-3xl mx-auto w-full px-1 sm:px-0">
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-[#3C6E7A] transition-colors mb-4"
-      >
-        <ArrowLeft size={14} />
-        Back to dashboard
-      </Link>
+    <div className="max-w-3xl mx-auto p-5 sm:p-8">
+      <button onClick={() => router.push("/dashboard")} className="text-[#5A6B7A] text-sm mb-4 flex items-center gap-1 hover:text-[#1E2A32] transition-colors">
+        <ArrowLeft size={14} /> Back to dashboard
+      </button>
 
-      <div className="bg-white border border-stone-200 p-5 sm:p-8 rounded-3xl shadow-sm">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#3C6E7A]" />
-          <span className="text-xs font-semibold tracking-widest text-stone-400 uppercase">
-            Return and repent
-          </span>
+      <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 sm:p-8">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#E0674F]" />
+          <span className="text-xs font-semibold tracking-widest text-[#8A8478] uppercase">Return and repent</span>
         </div>
-
-        <h1 className="text-2xl sm:text-3xl font-serif text-stone-900 mb-1 flex items-center gap-2">
-          Tawbah <Shield size={20} className="text-[#3C6E7A]" />
+        <h1 className="text-2xl sm:text-3xl font-serif text-[#1E2A32] flex items-center gap-2 mb-1">
+          Tawbah <Shield size={20} className="text-[#E0674F]" />
         </h1>
-        <p className="text-sm text-stone-500 mb-8">{today}</p>
+        <p className="text-sm text-[#5A6B7A] mb-6">{new Date().toDateString()}</p>
 
-        <div className="bg-[#3C6E7A]/5 border border-[#3C6E7A]/20 rounded-2xl p-5 mb-8">
-          <p className="text-sm text-stone-700 italic leading-relaxed">
-            True tawbah has three conditions: sincere regret, stopping the wrong immediately,
-            and a firm resolve not to return to it. If it involves another person, making it right with them too.
+        <div className="bg-[#E0674F]/6 border border-[#E0674F]/20 rounded-2xl p-4.5 mb-6">
+          <p className="text-sm text-[#1E2A32] italic leading-relaxed">
+            True tawbah has three conditions: sincere regret, stopping the wrong immediately, and a firm resolve not to return to it.
           </p>
         </div>
 
-        <label className="block text-sm font-semibold text-stone-700 mb-2">
-          What do you regret today?
-        </label>
+        <label className="block text-sm font-semibold text-[#1E2A32] mb-2">What do you regret today?</label>
         <textarea
           value={regret}
           onChange={(e) => setRegret(e.target.value)}
           placeholder="Be specific — naming it clearly is part of sincerity."
-          rows={4}
-          className="w-full bg-stone-100 border border-stone-200 p-3 rounded-2xl outline-none focus:border-[#3C6E7A] text-stone-800 placeholder:text-stone-400 mb-6"
+          rows={3}
+          className="w-full bg-[#F4F1EA] border border-[#E5E0D5] p-3.5 rounded-2xl text-sm mb-5 focus:outline-none focus:border-[#2E5E4E] placeholder:text-[#B0AA9C]"
         />
 
-        <label className="block text-sm font-semibold text-stone-700 mb-2">
-          What is your firm intention going forward?
-        </label>
+        <label className="block text-sm font-semibold text-[#1E2A32] mb-2">What is your firm intention going forward?</label>
         <textarea
           value={intention}
           onChange={(e) => setIntention(e.target.value)}
           placeholder="One clear resolve, not a vague hope."
-          rows={4}
-          className="w-full bg-stone-100 border border-stone-200 p-3 rounded-2xl outline-none focus:border-[#3C6E7A] text-stone-800 placeholder:text-stone-400 mb-8"
+          rows={3}
+          className="w-full bg-[#F4F1EA] border border-[#E5E0D5] p-3.5 rounded-2xl text-sm mb-6 focus:outline-none focus:border-[#2E5E4E] placeholder:text-[#B0AA9C]"
         />
 
         <button
           onClick={handleSave}
-          className="bg-[#3C6E7A] hover:bg-[#2C5560] text-white px-4 py-3 rounded-full w-full font-semibold transition-colors"
+          disabled={saving}
+          className="w-full bg-[#E0674F] hover:bg-[#C85640] text-white rounded-full py-3.5 font-semibold text-sm transition-colors disabled:opacity-60"
         >
-          {saved ? "Saved ✓" : "Record my tawbah"}
+          {saving ? "Saving..." : saved ? "Recorded ✓" : "Record my tawbah"}
         </button>
-
-        <p className="text-xs text-stone-400 mt-4 text-center">
+        <p className="text-center text-xs text-[#8A8478] mt-4">
           This stays private. Allah loves those who turn back to Him often.
         </p>
       </div>
