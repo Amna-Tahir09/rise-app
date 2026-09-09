@@ -4,32 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { Moon, ArrowLeft } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const FIELDS = [
-  {
-    key: "mistakes",
-    label: "What mistakes did I make today?",
-    placeholder: "Be honest — this is only for you.",
-  },
-  {
-    key: "lost_control",
-    label: "Where did I lose emotional control?",
-    placeholder: "Anger, impatience, harsh words...",
-  },
-  {
-    key: "triggers",
-    label: "What triggered it?",
-    placeholder: "Tiredness, a specific person, hunger, being rushed...",
-  },
-  {
-    key: "sincere_action",
-    label: "What was my most sincere action today?",
-    placeholder: "Something done purely for Allah, with no one watching.",
-  },
-  {
-    key: "tawbah",
-    label: "What do I intend to change tomorrow?",
-    placeholder: "One specific, small thing.",
-  },
+  { key: "mistakes", label: "What mistakes did I make today?", placeholder: "Be honest — this is only for you." },
+  { key: "lost_control", label: "Where did I lose emotional control?", placeholder: "Anger, impatience, harsh words..." },
+  { key: "triggers", label: "What triggered it?", placeholder: "Tiredness, a specific person, hunger, being rushed..." },
+  { key: "sincere_action", label: "What was my most sincere action today?", placeholder: "Something done purely for Allah, with no one watching." },
+  { key: "tawbah", label: "What do I intend to change tomorrow?", placeholder: "One specific, small thing." },
 ];
 
 export default function MuhasabaPage() {
@@ -37,17 +19,54 @@ export default function MuhasabaPage() {
     Object.fromEntries(FIELDS.map((f) => [f.key, ""]))
   );
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const today = new Date().toISOString().split("T")[0];
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const reflection_text = FIELDS.map(
       (f) => `${f.label}\n${answers[f.key].trim() || "—"}`
     ).join("\n\n");
     const payload = { date: today, reflection_text };
     localStorage.setItem("rise_last_muhasaba", JSON.stringify(payload));
     localStorage.setItem(`rise_muhasaba_log_${today}`, "true");
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+
+    const token = localStorage.getItem("rise_token");
+    if (!token) {
+      // guest mode: local only
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+      return;
+    }
+
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/muhasaba-log`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        // CONFIRM: field name reflection_text matches your table description,
+        // so this one's likely right — but confirm whether a log_type
+        // discriminator is also expected here (see Nafs Tracker note) if
+        // /muhasaba-log is shared across Tazkiya sub-features.
+        body: JSON.stringify({ date: today, reflection_text }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || "Couldn't save. Please try again.");
+      }
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't save. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filled = FIELDS.filter((f) => answers[f.key].trim()).length;
@@ -95,11 +114,16 @@ export default function MuhasabaPage() {
           </div>
         ))}
 
+        {error && (
+          <p className="text-xs text-red-500 mb-4 text-center">{error}</p>
+        )}
+
         <button
           onClick={handleSave}
-          className="bg-[#3C6E7A] hover:bg-[#2C5560] text-white px-4 py-3 rounded-full w-full font-semibold transition-colors"
+          disabled={loading}
+          className="bg-[#3C6E7A] hover:bg-[#2C5560] disabled:opacity-60 text-white px-4 py-3 rounded-full w-full font-semibold transition-colors"
         >
-          {saved ? "Saved ✓" : "Save today's muhasaba"}
+          {loading ? "Saving..." : saved ? "Saved ✓" : "Save today's muhasaba"}
         </button>
 
         <p className="text-xs text-stone-400 mt-4 text-center">

@@ -9,6 +9,8 @@ interface Message {
   text: string;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const PLACEHOLDER_RESPONSES = [
   "That's something worth sitting with. Can you tell me a bit more about when this tends to happen?",
   "I hear you. Small, consistent steps usually matter more than big ones — what's one small thing you could try tomorrow?",
@@ -52,7 +54,7 @@ export default function FloatingChatButton() {
     if (open) scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping, open]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage: Message = {
@@ -66,18 +68,70 @@ export default function FloatingChatButton() {
     setInput("");
     setIsTyping(true);
 
-    // TEMPORARY: fake response until backend /chat route exists
-    setTimeout(() => {
-      const response =
-        PLACEHOLDER_RESPONSES[Math.floor(Math.random() * PLACEHOLDER_RESPONSES.length)];
+    const token = localStorage.getItem("rise_token");
+
+    // Guests: keep the exact original placeholder behavior, local-only.
+    if (!token) {
+      setTimeout(() => {
+        const response =
+          PLACEHOLDER_RESPONSES[Math.floor(Math.random() * PLACEHOLDER_RESPONSES.length)];
+        const withReply = [
+          ...updated,
+          { id: crypto.randomUUID(), role: "assistant" as const, text: response },
+        ];
+        setMessages(withReply);
+        saveMessages(withReply);
+        setIsTyping(false);
+      }, 1200);
+      return;
+    }
+
+    try {
+      // CONFIRM: exact request body for POST /chat — guessing { message, history }.
+      // The RAG pipeline may only need the latest message, or may want the full
+      // conversation for context; confirm which, and drop "history" if unneeded.
+      const res = await fetch(`${API_URL}/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          message: userMessage.text,
+          history: updated.map(({ role, text }) => ({ role, text })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Chat request failed");
+
+      // CONFIRM: exact response field name — guessing "response".
+      const replyText: string = data.response ?? data.reply ?? data.message;
       const withReply = [
         ...updated,
-        { id: crypto.randomUUID(), role: "assistant" as const, text: response },
+        { id: crypto.randomUUID(), role: "assistant" as const, text: replyText },
       ];
       setMessages(withReply);
       saveMessages(withReply);
+    } catch (err) {
+      // DECISION FLAG, not a silent guess: this page has no error UI, so on
+      // failure I'm surfacing the error as an assistant-style bubble reusing
+      // the existing message rendering (not new JSX/components). If you'd
+      // rather fail silently or add a dedicated error banner, tell me and
+      // I'll change this block.
+      console.error("FloatingChatButton: /chat request failed", err);
+      const withError = [
+        ...updated,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant" as const,
+          text: "Sorry, I couldn't reach the server. Please try again.",
+        },
+      ];
+      setMessages(withError);
+      saveMessages(withError);
+    } finally {
       setIsTyping(false);
-    }, 1200);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
