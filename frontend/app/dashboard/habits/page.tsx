@@ -51,8 +51,8 @@ export default function HabitsPage() {
     closeForm();
     // CONFIRM: does /habit-log also handle creating the habit definition, or is there a
     // separate route (e.g. POST /habits) for that? Sending as a "not logged yet" entry for now.
-    try {
-      await fetch("https://occupier-squall-handmade.ngrok-free.dev/habit-log", {
+        try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/habit-log`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ user_id: getUserId(), habit_name: name, date: todayKey(), logged: false, note }),
@@ -75,8 +75,8 @@ export default function HabitsPage() {
     const updated = isDone ? todayLog.filter((id) => id !== habitId) : [...todayLog, habitId];
     setTodayLog(updated);
     localStorage.setItem(`rise_habit_log_${todayKey()}`, JSON.stringify(updated));
-    try {
-      await fetch("https://occupier-squall-handmade.ngrok-free.dev/habit-log", {
+ try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/habit-log`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ user_id: getUserId(), habit_id: habitId, habit_name: habitName, date: todayKey(), logged: !isDone }),

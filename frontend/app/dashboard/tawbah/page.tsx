@@ -31,7 +31,7 @@ export default function TawbahPage() {
     // CONFIRM: is tawbah stored via the same /muhasaba-log endpoint (as part of
     // reflection_text or a dedicated field), or does it need its own route?
     try {
-      await fetch("https://occupier-squall-handmade.ngrok-free.dev/muhasaba-log", {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/muhasaba-log`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({

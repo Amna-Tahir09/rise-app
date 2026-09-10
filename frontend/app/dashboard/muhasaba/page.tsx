@@ -43,7 +43,7 @@ export default function MuhasabaPage() {
     // "answers" as a single JSON object keyed by question, matching the API contract
     // Rimsha mentioned (nafs_ratings stored as one JSON object). Adjust keys/shape once confirmed.
     try {
-      await fetch("https://occupier-squall-handmade.ngrok-free.dev/muhasaba-log", {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/muhasaba-log`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ user_id: getUserId(), date: todayKey(), reflection_text: JSON.stringify(answers) }),
