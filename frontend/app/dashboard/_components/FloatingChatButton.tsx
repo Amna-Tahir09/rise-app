@@ -44,9 +44,9 @@ export default function FloatingChatButton() {
     // CONFIRM: same /chat contract as the full chat page — { user_id, message } in,
     // { response } out. Adjust once Arooba's RAG pipeline field names are confirmed.
     try {
-      const res = await fetch("https://occupier-squall-handmade.ngrok-free.dev/chat", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true", Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ user_id: getUserId(), message: userMsg.content }),
       });
       const data = await res.json();
@@ -69,27 +69,27 @@ export default function FloatingChatButton() {
     <>
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[#2E5E4E] text-white shadow-lg flex items-center justify-center z-40 hover:bg-[#254D40] transition-colors"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[#4B6E6D] text-white shadow-lg flex items-center justify-center z-40 hover:bg-[#3A5654] transition-colors"
       >
         {open ? <X size={22} /> : <MessageCircle size={22} />}
       </button>
 
       {open && (
-        <div className="fixed bottom-24 right-6 w-[92vw] sm:w-96 h-[70vh] max-h-[560px] bg-white border border-[#E5E0D5] rounded-3xl shadow-2xl flex flex-col z-40 overflow-hidden">
+        <div className="fixed bottom-24 right-6 w-[92vw] sm:w-96 h-[70vh] max-h-[560px] bg-white border border-[#DCE4DC] rounded-3xl shadow-2xl flex flex-col z-40 overflow-hidden">
           <div className="px-5 py-4 border-b border-[#F0EDE6] flex items-center gap-2">
-            <MessageCircle size={16} className="text-[#2E5E4E]" />
-            <span className="text-sm font-semibold text-[#1E2A32]">Ask Rise</span>
+            <MessageCircle size={16} className="text-[#4B6E6D]" />
+            <span className="text-sm font-semibold text-[#2C3E40]">Ask Rise</span>
           </div>
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${m.role === "user" ? "bg-[#2E5E4E] text-white rounded-br-md" : "bg-[#F4F1EA] text-[#1E2A32] rounded-bl-md"}`}>
+                <div className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${m.role === "user" ? "bg-[#4B6E6D] text-white rounded-br-md" : "bg-[#EAF0E8] text-[#2C3E40] rounded-bl-md"}`}>
                   {m.content}
                 </div>
               </div>
             ))}
-            {loading && <div className="bg-[#F4F1EA] text-[#8A8478] px-3.5 py-2.5 rounded-2xl rounded-bl-md text-sm w-fit">Thinking...</div>}
+            {loading && <div className="bg-[#EAF0E8] text-[#8DA0A0] px-3.5 py-2.5 rounded-2xl rounded-bl-md text-sm w-fit">Thinking...</div>}
           </div>
 
           <div className="flex gap-2 p-3 border-t border-[#F0EDE6]">
@@ -98,9 +98,9 @@ export default function FloatingChatButton() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               placeholder="Type a message..."
-              className="flex-1 bg-[#F4F1EA] border border-[#E5E0D5] px-4 py-2.5 rounded-full text-sm focus:outline-none focus:border-[#2E5E4E]"
+              className="flex-1 bg-[#EAF0E8] border border-[#DCE4DC] px-4 py-2.5 rounded-full text-sm focus:outline-none focus:border-[#4B6E6D]"
             />
-            <button onClick={sendMessage} disabled={loading} className="w-10 h-10 rounded-full bg-[#2E5E4E] text-white flex items-center justify-center flex-shrink-0 disabled:opacity-60">
+            <button onClick={sendMessage} disabled={loading} className="w-10 h-10 rounded-full bg-[#4B6E6D] text-white flex items-center justify-center flex-shrink-0 disabled:opacity-60">
               <Send size={15} />
             </button>
           </div>

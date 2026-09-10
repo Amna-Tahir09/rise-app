@@ -19,7 +19,7 @@ export default function LandingPage() {
 
         <div className="wrap">
           {/* doodle: thin vine, top-left, like the portfolio's corner vine */}
-          <svg className="doodle doodle-vine" width="70" height="200" viewBox="0 0 70 200" fill="none" stroke="#2E5E4E" strokeWidth="1.4">
+          <svg className="doodle doodle-vine" width="70" height="200" viewBox="0 0 70 200" fill="none" stroke="#4B6E6D" strokeWidth="1.4">
             <path d="M20 195 Q40 140 32 90 Q28 55 45 30 Q52 20 48 6"/>
             <circle cx="46" cy="8" r="6"/>
             <circle cx="18" cy="55" r="5.5"/>
@@ -27,7 +27,7 @@ export default function LandingPage() {
           </svg>
 
           {/* doodle: sparkles */}
-          <svg className="doodle doodle-sparkle-1" width="26" height="26" viewBox="0 0 26 26" fill="#B5822C">
+          <svg className="doodle doodle-sparkle-1" width="26" height="26" viewBox="0 0 26 26" fill="#B5A07A">
             <path d="M13 0 L15 11 L26 13 L15 15 L13 26 L11 15 L0 13 L11 11 Z"/>
           </svg>
           <svg className="doodle doodle-sparkle-2" width="18" height="18" viewBox="0 0 18 18" fill="#E0674F">
@@ -102,7 +102,7 @@ export default function LandingPage() {
       </section>
 
       <section className="grounded" id="grounded">
-        <svg className="doodle doodle-sparkle-3" width="20" height="20" viewBox="0 0 20 20" fill="#2E5E4E">
+        <svg className="doodle doodle-sparkle-3" width="20" height="20" viewBox="0 0 20 20" fill="#4B6E6D">
           <path d="M10 0 L11.5 8.5 L20 10 L11.5 11.5 L10 20 L8.5 11.5 L0 10 L8.5 8.5 Z"/>
         </svg>
         <div className="wrap">
@@ -121,7 +121,7 @@ export default function LandingPage() {
       </section>
 
       <div className="wrap cta-wrap">
-        <svg className="doodle doodle-vine-2" width="90" height="120" viewBox="0 0 90 120" fill="none" stroke="#F9F7F4" strokeWidth="1.4">
+        <svg className="doodle doodle-vine-2" width="90" height="120" viewBox="0 0 90 120" fill="none" stroke="#F2F6F0" strokeWidth="1.4">
           <path d="M10 115 Q40 80 30 45 Q26 20 50 4"/>
           <circle cx="50" cy="6" r="6"/>
           <circle cx="24" cy="55" r="5"/>
@@ -150,8 +150,8 @@ export default function LandingPage() {
 
       <style jsx global>{`
         :root{
-          --cream:#D7DDBC; --cream2:#F1ECE1; --sage-deep:#B3C08C; --ink:#1E2A32; --muted:#5A6B7A;
-          --cedar:#2E5E4E; --cedar-light:#5C8A78; --gold:#E8B84B; --gold-dark:#B5822C;
+          --cream:#D7DDBC; --cream2:#F1ECE1; --sage-deep:#B3C08C; --ink:#2C3E40; --muted:#5E7473;
+          --cedar:#4B6E6D; --cedar-light:#5C8A78; --gold:#D6C6A8; --gold-dark:#B5A07A;
           --terra:#E0674F; --line:rgba(30,42,50,0.1);
         }
         *{box-sizing:border-box; margin:0; padding:0;}
@@ -163,7 +163,7 @@ export default function LandingPage() {
         nav{display:flex; align-items:center; justify-content:space-between; padding:34px 0; position:relative; z-index:5;}
         .logo{display:flex; align-items:center; gap:10px; font-family:'Playfair Display'; font-style:italic; font-weight:600; font-size:23px;}
         .logo .mark{width:34px; height:34px; border-radius:50%; overflow:hidden; background:var(--cedar); flex-shrink:0;}
-        nav ul{display:flex; gap:34px; list-style:none; font-size:14px; font-weight:500;}
+        nav ul{display:flex; gap:34px; list-style:none; font-size:14px; font-weight:500; margin-left:auto; margin-right:48px;}
         nav ul a{text-decoration:none; opacity:0.65;}
         .nav-cta{background:var(--ink); color:var(--cream); padding:11px 24px; border-radius:999px; font-size:13.5px; font-weight:600; text-decoration:none;}
 
@@ -177,16 +177,21 @@ export default function LandingPage() {
         .hero .doodle-sparkle-2{top:130px; left:6%; opacity:0.4; z-index:1;}
         .hero .doodle-note{
           position:absolute; top:16px; right:4%; z-index:3;
-          background:#FBF0C8; color:#5A4A1E;
-          padding:16px 18px; border-radius:4px; transform:rotate(4deg);
+          background:#FBF0C8; color:#4A5548;
+          padding:20px 22px; transform:rotate(4deg);
           box-shadow:0 6px 14px rgba(0,0,0,0.12);
           font-family:'Caveat',cursive; font-size:17px; line-height:1.35; font-weight:600;
           max-width:170px;
+          clip-path: polygon(2.0% 0.0%, 11.6% 2.4%, 21.2% -1.8%, 30.8% 2.8%, 40.4% -1.4%, 50.0% 3.2%, 59.6% -1.0%, 69.2% 3.6%, 78.8% -0.6%, 88.4% 4.0%, 98.0% 2.0%, 100.2% 11.6%, 95.8% 21.2%, 100.2% 30.8%, 95.8% 40.4%, 100.2% 50.0%, 95.8% 59.6%, 100.2% 69.2%, 95.8% 78.8%, 100.2% 88.4%, 98.0% 98.0%, 88.4% 100.2%, 78.8% 95.8%, 69.2% 100.2%, 59.6% 95.8%, 50.0% 100.2%, 40.4% 95.8%, 30.8% 100.2%, 21.2% 95.8%, 11.6% 100.2%, 2.0% 98.0%, 4.2% 88.2%, -0.2% 78.4%, 4.2% 68.6%, -0.2% 58.8%, 4.2% 49.0%, -0.2% 39.2%, 4.2% 29.4%, -0.2% 19.6%, 4.2% 9.8%);
         }
         .hero-panel{
           position:relative;
           border-radius:32px;
           padding:56px 44px 60px 180px;
+          min-height:420px;
+          display:flex;
+          flex-direction:column;
+          justify-content:center;
           background-image:
             linear-gradient(160deg, rgba(30,42,50,0.55) 0%, rgba(30,42,50,0.35) 55%, rgba(30,42,50,0.6) 100%),
             url('/rise-landing-bg.png');
@@ -198,11 +203,12 @@ export default function LandingPage() {
         }
         .hero-badge{
           position:absolute; top:28px; left:168px;
-          width:84px; height:84px; border-radius:50%;
-          background:rgba(232,184,75,0.9);
+          width:96px; height:96px;
+          background:rgba(232,184,75,0.95);
           display:flex; align-items:center; justify-content:center;
           font-family:'Playfair Display'; font-style:italic; font-weight:700; font-size:17px; color:var(--ink);
           letter-spacing:0.02em;
+          clip-path: polygon(50.0% 0.0%, 55.5% 8.4%, 62.9% 1.7%, 66.1% 11.2%, 75.0% 6.7%, 75.6% 16.7%, 85.4% 14.6%, 83.3% 24.4%, 93.3% 25.0%, 88.8% 33.9%, 98.3% 37.1%, 91.6% 44.5%, 100.0% 50.0%, 91.6% 55.5%, 98.3% 62.9%, 88.8% 66.1%, 93.3% 75.0%, 83.3% 75.6%, 85.4% 85.4%, 75.6% 83.3%, 75.0% 93.3%, 66.1% 88.8%, 62.9% 98.3%, 55.5% 91.6%, 50.0% 100.0%, 44.5% 91.6%, 37.1% 98.3%, 33.9% 88.8%, 25.0% 93.3%, 24.4% 83.3%, 14.6% 85.4%, 16.7% 75.6%, 6.7% 75.0%, 11.2% 66.1%, 1.7% 62.9%, 8.4% 55.5%, 0.0% 50.0%, 8.4% 44.5%, 1.7% 37.1%, 11.2% 33.9%, 6.7% 25.0%, 16.7% 24.4%, 14.6% 14.6%, 24.4% 16.7%, 25.0% 6.7%, 33.9% 11.2%, 37.1% 1.7%, 44.5% 8.4%);
         }
         .hero-kicker{
           display:inline-block; margin-top:64px;
@@ -245,7 +251,7 @@ export default function LandingPage() {
           background:
             radial-gradient(circle at 15% 10%, rgba(232,184,75,0.18), transparent 45%),
             radial-gradient(circle at 90% 85%, rgba(46,94,78,0.22), transparent 50%),
-            linear-gradient(155deg, #4A5D73 0%, #3D4F63 60%, #33445A 100%);
+            linear-gradient(155deg, #4A5D73 0%, #4A5D73 60%, #33445A 100%);
           padding:90px 44px; color:white; border-radius:40px; width:100%;
         }
         .journey .eyebrow{font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold); font-weight:700; margin-bottom:16px; display:block;}
@@ -274,7 +280,9 @@ export default function LandingPage() {
         .cta-wrap{padding-bottom:90px; position:relative; max-width:1450px; padding-left:32px; padding-right:32px;}
         .cta-wrap .doodle-vine-2{bottom:-20px; right:-10px; opacity:0.3; z-index:0;}
         .cta-band{
-          border-radius:40px; padding:70px 40px; text-align:center;
+          border-radius:32px; padding:60px; text-align:center;
+          min-height:420px;
+          display:flex; flex-direction:column; align-items:center; justify-content:center;
           background-image:
             linear-gradient(160deg, rgba(30,42,50,0.6), rgba(46,94,78,0.55)),
             url('/rise-landing-bg.png');
@@ -285,7 +293,7 @@ export default function LandingPage() {
         .cta-band h2{font-size:30px; font-weight:500; margin-bottom:8px;}
         .cta-band h2 .em{font-style:italic; font-weight:600;}
         .cta-band p{font-size:15px; opacity:0.8; margin-bottom:28px;}
-        .cta-btn{display:inline-block; background:white; color:var(--ink); padding:16px 34px; border-radius:999px; font-weight:700; font-size:15px; text-decoration:none;}
+        .cta-btn{display:inline-block; background:white; color:var(--ink); padding:11px 24px; border-radius:999px; font-weight:700; font-size:14px; text-decoration:none;}
 
         footer{border-top:1px solid var(--line); padding:44px 0 28px;}
         .footer-top{display:flex; justify-content:space-between; margin-bottom:36px; flex-wrap:wrap; gap:24px;}

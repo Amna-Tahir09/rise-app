@@ -56,8 +56,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const userId = getUserId();
     if (!userId) return;
     try {
-      const res = await fetch(`https://occupier-squall-handmade.ngrok-free.dev/dashboard/${userId}`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/${userId}`, {
+        headers: { "ngrok-skip-browser-warning": "true", Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
       setStreak(data.best_streak ?? 0);
@@ -125,9 +125,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const showSidebar = !mounted || sidebarOpen;
 
   return (
-    <div className="min-h-screen flex bg-[#F9F7F4]">
+    <div className="min-h-screen flex bg-[#F2F6F0]">
       {showSidebar && (
-        <aside className="w-64 bg-[#2E5E4E] p-6 flex-shrink-0 flex flex-col">
+        <aside
+          className="w-64 p-6 flex-shrink-0 flex flex-col relative overflow-hidden"
+          style={{
+            background:
+              mode === "habit"
+                ? "radial-gradient(circle at 15% 10%, rgba(232,184,75,0.14), transparent 45%), radial-gradient(circle at 90% 85%, rgba(255,255,255,0.06), transparent 50%), #3A5654"
+                : "radial-gradient(circle at 15% 10%, rgba(232,184,75,0.13), transparent 45%), radial-gradient(circle at 90% 85%, rgba(46,94,78,0.16), transparent 50%), linear-gradient(155deg, #4A5D73 0%, #3A4A5D 60%, #2C3944 100%)",
+          }}
+        >
+          <div className="relative z-10 flex flex-col h-full">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-full overflow-hidden border border-white/30 flex-shrink-0">
@@ -153,12 +162,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {mode === "habit" ? (
             <>
-              <Link href="/dashboard/habits" className="flex items-center justify-center gap-2 mb-4 bg-white hover:bg-[#F4F1EA] text-[#2E5E4E] text-sm font-semibold px-3 py-2.5 rounded-xl transition-colors">
+              <Link href="/dashboard/habits" className="flex items-center justify-center gap-2 mb-4 bg-white hover:bg-[#EAF0E8] text-[#4B6E6D] text-sm font-semibold px-3 py-2.5 rounded-xl transition-colors">
                 <Plus size={16} /> Add habit
               </Link>
               <div className="grid grid-cols-2 gap-2 mb-6">
                 <div className="bg-white/10 border border-white/15 rounded-xl p-3 flex flex-col items-center">
-                  <Flame className="text-[#E8B84B]" size={16} />
+                  <Flame className="text-[#D6C6A8]" size={16} />
                   <p className="text-lg font-serif text-white mt-1">{streak}</p>
                   <p className="text-[10px] text-white/60 uppercase tracking-wide">Streak</p>
                 </div>
@@ -166,7 +175,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="relative w-9 h-9">
                     <svg viewBox="0 0 36 36" className="w-9 h-9 -rotate-90">
                       <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="4" />
-                      <circle cx="18" cy="18" r="15" fill="none" stroke="#E8B84B" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${(todayRate / 100) * 94} 94`} />
+                      <circle cx="18" cy="18" r="15" fill="none" stroke="#D6C6A8" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${(todayRate / 100) * 94} 94`} />
                     </svg>
                   </div>
                   <p className="text-[10px] text-white/60 uppercase tracking-wide mt-1">{todayRate}% today</p>
@@ -175,11 +184,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </>
           ) : (
             <>
-              <Link href="/dashboard/muhasaba" className="flex items-center justify-center gap-2 mb-4 bg-white hover:bg-[#F4F1EA] text-[#2E5E4E] text-sm font-semibold px-3 py-2.5 rounded-xl transition-colors">
+              <Link href="/dashboard/muhasaba" className="flex items-center justify-center gap-2 mb-4 bg-white hover:bg-[#EAF0E8] text-[#4B6E6D] text-sm font-semibold px-3 py-2.5 rounded-xl transition-colors">
                 <Plus size={16} /> Reflect today
               </Link>
               <div className="bg-white/10 border border-white/15 rounded-xl p-3 flex items-center justify-center gap-2 mb-6">
-                <Flame className="text-[#E8B84B]" size={16} />
+                <Flame className="text-[#D6C6A8]" size={16} />
                 <span className="text-lg font-serif text-white">{tawbahStreak}</span>
                 <span className="text-[10px] text-white/60 uppercase tracking-wide">Day Streak</span>
               </div>
@@ -219,19 +228,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </button>
             )}
           </div>
+          </div>
         </aside>
       )}
 
       <main className="flex-1 p-8">
         <div className="flex items-center justify-between mb-4">
           {mounted && !sidebarOpen ? (
-            <button onClick={() => setSidebarOpen(true)} className="text-[#2E5E4E] p-2 bg-white rounded-xl shadow-sm border border-[#E5E0D5]" aria-label="Open sidebar">
+            <button onClick={() => setSidebarOpen(true)} className="text-[#4B6E6D] p-2 bg-white rounded-xl shadow-sm border border-[#DCE4DC]" aria-label="Open sidebar">
               <Menu size={20} />
             </button>
           ) : (
             <span />
           )}
-          <button onClick={() => router.push("/mode")} className="flex items-center gap-1 text-sm text-[#5A6B7A] hover:text-[#2E5E4E] transition-colors">
+          <button onClick={() => router.push("/mode")} className="flex items-center gap-1 text-sm text-[#5E7473] hover:text-[#4B6E6D] transition-colors">
             <ArrowLeft size={14} /> Change mode
           </button>
         </div>
