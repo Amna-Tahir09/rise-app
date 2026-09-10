@@ -10,7 +10,7 @@ export default function LandingPage() {
             <li><a href="#modes">Modes</a></li>
             <li><a href="#journey">How it works</a></li>
           </ul>
-          <a className="nav-cta" href="/login">Get started</a>
+          <a className="nav-cta" href="/signup">Get started</a>
         </nav>
       </div>
 
@@ -160,12 +160,12 @@ export default function LandingPage() {
         a{color:inherit;}
         .wrap{max-width:1450px; margin:0 auto; padding:0 32px; position:relative;}
 
-        nav{display:flex; align-items:center; justify-content:space-between; padding:34px 0; position:relative; z-index:5;}
-        .logo{display:flex; align-items:center; gap:10px; font-family:'Playfair Display'; font-style:italic; font-weight:600; font-size:23px;}
+        nav{display:flex; align-items:center; justify-content:space-between; gap:24px; padding:34px 0; position:relative; z-index:5;}
+        .logo{display:flex; align-items:center; gap:10px; font-family:'Playfair Display'; font-style:italic; font-weight:600; font-size:23px; flex-shrink:0;}
         .logo .mark{width:34px; height:34px; border-radius:50%; overflow:hidden; background:var(--cedar); flex-shrink:0;}
-        nav ul{display:flex; gap:34px; list-style:none; font-size:14px; font-weight:500; margin-left:auto; margin-right:48px;}
+        nav ul{display:flex; gap:34px; list-style:none; font-size:14px; font-weight:500;}
         nav ul a{text-decoration:none; opacity:0.65;}
-        .nav-cta{background:var(--ink); color:var(--cream); padding:11px 24px; border-radius:999px; font-size:13.5px; font-weight:600; text-decoration:none;}
+        .nav-cta{background:var(--ink); color:var(--cream); padding:11px 24px; border-radius:999px; font-size:13.5px; font-weight:600; text-decoration:none; flex-shrink:0;}
 
         .hero{position:relative; padding:20px 0 100px; overflow:visible;}
         .doodle{position:absolute; pointer-events:none; z-index:6;}
@@ -178,11 +178,10 @@ export default function LandingPage() {
         .hero .doodle-note{
           position:absolute; top:16px; right:4%; z-index:3;
           background:#FBF0C8; color:#4A5548;
-          padding:20px 22px; transform:rotate(4deg);
+          padding:18px 20px; border-radius:10px; transform:rotate(3deg);
           box-shadow:0 6px 14px rgba(0,0,0,0.12);
           font-family:'Caveat',cursive; font-size:17px; line-height:1.35; font-weight:600;
           max-width:170px;
-          clip-path: polygon(2.0% 0.0%, 11.6% 2.4%, 21.2% -1.8%, 30.8% 2.8%, 40.4% -1.4%, 50.0% 3.2%, 59.6% -1.0%, 69.2% 3.6%, 78.8% -0.6%, 88.4% 4.0%, 98.0% 2.0%, 100.2% 11.6%, 95.8% 21.2%, 100.2% 30.8%, 95.8% 40.4%, 100.2% 50.0%, 95.8% 59.6%, 100.2% 69.2%, 95.8% 78.8%, 100.2% 88.4%, 98.0% 98.0%, 88.4% 100.2%, 78.8% 95.8%, 69.2% 100.2%, 59.6% 95.8%, 50.0% 100.2%, 40.4% 95.8%, 30.8% 100.2%, 21.2% 95.8%, 11.6% 100.2%, 2.0% 98.0%, 4.2% 88.2%, -0.2% 78.4%, 4.2% 68.6%, -0.2% 58.8%, 4.2% 49.0%, -0.2% 39.2%, 4.2% 29.4%, -0.2% 19.6%, 4.2% 9.8%);
         }
         .hero-panel{
           position:relative;
@@ -192,6 +191,7 @@ export default function LandingPage() {
           display:flex;
           flex-direction:column;
           justify-content:center;
+          align-items:flex-start;
           background-image:
             linear-gradient(160deg, rgba(30,42,50,0.55) 0%, rgba(30,42,50,0.35) 55%, rgba(30,42,50,0.6) 100%),
             url('/rise-landing-bg.png');
@@ -203,15 +203,16 @@ export default function LandingPage() {
         }
         .hero-badge{
           position:absolute; top:28px; left:168px;
-          width:96px; height:96px;
+          width:88px; height:88px;
           background:rgba(232,184,75,0.95);
+          border-radius:50%;
           display:flex; align-items:center; justify-content:center;
           font-family:'Playfair Display'; font-style:italic; font-weight:700; font-size:17px; color:var(--ink);
           letter-spacing:0.02em;
-          clip-path: polygon(50.0% 0.0%, 55.5% 8.4%, 62.9% 1.7%, 66.1% 11.2%, 75.0% 6.7%, 75.6% 16.7%, 85.4% 14.6%, 83.3% 24.4%, 93.3% 25.0%, 88.8% 33.9%, 98.3% 37.1%, 91.6% 44.5%, 100.0% 50.0%, 91.6% 55.5%, 98.3% 62.9%, 88.8% 66.1%, 93.3% 75.0%, 83.3% 75.6%, 85.4% 85.4%, 75.6% 83.3%, 75.0% 93.3%, 66.1% 88.8%, 62.9% 98.3%, 55.5% 91.6%, 50.0% 100.0%, 44.5% 91.6%, 37.1% 98.3%, 33.9% 88.8%, 25.0% 93.3%, 24.4% 83.3%, 14.6% 85.4%, 16.7% 75.6%, 6.7% 75.0%, 11.2% 66.1%, 1.7% 62.9%, 8.4% 55.5%, 0.0% 50.0%, 8.4% 44.5%, 1.7% 37.1%, 11.2% 33.9%, 6.7% 25.0%, 16.7% 24.4%, 14.6% 14.6%, 24.4% 16.7%, 25.0% 6.7%, 33.9% 11.2%, 37.1% 1.7%, 44.5% 8.4%);
+          box-shadow:0 6px 16px rgba(0,0,0,0.18);
         }
         .hero-kicker{
-          display:inline-block; margin-top:64px;
+          display:inline-block; align-self:flex-start; margin-top:52px;
           background:rgba(31,68,54,0.82); backdrop-filter:blur(3px);
           padding:10px 22px; border-radius:999px; font-size:14px; font-weight:600;
         }
@@ -219,9 +220,10 @@ export default function LandingPage() {
         .hero h1 .em{font-style:italic; font-weight:600;}
         .hero p.sub{font-size:15px; opacity:0.88; max-width:52ch; margin-bottom:24px;}
         .hero-cta{
-          display:inline-flex; align-items:center; gap:8px;
+          display:inline-flex; align-self:flex-start; align-items:center; gap:8px;
           background:var(--cream); color:var(--ink);
-          padding:11px 22px; border-radius:999px; font-weight:700; font-size:14px; text-decoration:none;
+          padding:12px 24px; border-radius:999px; font-weight:700; font-size:14px; text-decoration:none;
+          box-shadow:0 6px 16px rgba(0,0,0,0.15);
         }
 
         .story-line{padding:80px 0 60px; text-align:center; position:relative;}
@@ -230,7 +232,11 @@ export default function LandingPage() {
 
         .modes{padding:20px 0 90px;}
         .modes-head{max-width:56ch; margin:0 auto 50px; text-align:center;}
-        .modes-head .eyebrow{font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--cedar); font-weight:700; margin-bottom:14px; display:block;}
+        .modes-head .eyebrow{
+          display:inline-block; font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase;
+          color:var(--cedar); font-weight:700; margin-bottom:18px;
+          background:rgba(75,110,109,0.12); padding:8px 18px; border-radius:999px;
+        }
         .modes-head h2{font-size:32px; font-weight:600;}
         .mode-grid{display:grid; grid-template-columns:1fr 1fr; gap:24px;}
         .mode-card{
@@ -254,7 +260,11 @@ export default function LandingPage() {
             linear-gradient(155deg, #4A5D73 0%, #4A5D73 60%, #33445A 100%);
           padding:90px 44px; color:white; border-radius:40px; width:100%;
         }
-        .journey .eyebrow{font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold); font-weight:700; margin-bottom:16px; display:block;}
+        .journey .eyebrow{
+          display:inline-block; font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase;
+          color:var(--gold); font-weight:700; margin-bottom:20px;
+          background:rgba(255,255,255,0.1); padding:8px 18px; border-radius:999px;
+        }
         .journey h2{font-size:30px; font-weight:600; max-width:20ch; margin-bottom:56px;}
         .journey-steps{display:flex; flex-direction:column; gap:0;}
         .jstep{display:grid; grid-template-columns:60px 1fr; gap:24px; padding:28px 0; border-top:1px solid rgba(255,255,255,0.15);}
@@ -277,9 +287,10 @@ export default function LandingPage() {
         .quote-card p{font-family:'Playfair Display'; font-style:italic; font-size:16px; line-height:1.7; margin-bottom:16px; color:var(--ink);}
         .quote-card .cite{font-size:12.5px; color:var(--muted); font-weight:600;}
 
-        .cta-wrap{padding-bottom:90px; position:relative; max-width:1450px; padding-left:32px; padding-right:32px;}
+        .cta-wrap{display:block; padding-bottom:90px; position:relative; max-width:1450px; padding-left:32px; padding-right:32px;}
         .cta-wrap .doodle-vine-2{bottom:-20px; right:-10px; opacity:0.3; z-index:0;}
         .cta-band{
+          width:100%; box-sizing:border-box;
           border-radius:32px; padding:60px; text-align:center;
           min-height:420px;
           display:flex; flex-direction:column; align-items:center; justify-content:center;
