@@ -111,10 +111,9 @@ export default function OnboardingPage() {
     // CONFIRM: exact field names expected by POST /onboarding — assuming
     // { user_id, mode, answers: [{question, answer}] } with Bearer auth.
     try {
-      await fetch("https://occupier-squall-handmade.ngrok-free.dev/onboarding", {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/onboarding`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+        headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true",
           Authorization: `Bearer ${getToken()}`,
         },
         body: JSON.stringify({ user_id: getUserId(), mode, answers: payload }),
@@ -129,7 +128,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#F9F7F4]">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#F2F6F0]">
       {/* Background photo layer */}
       <div
         className="fixed inset-0 z-0"
@@ -137,43 +136,43 @@ export default function OnboardingPage() {
           backgroundImage: "url('/rise-landing-bg.png')",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          opacity: 0.7,
+          opacity: 0.8,
         }}
       />
 
       <div className="relative z-10 w-full flex flex-col items-center">
         <div className="max-w-md w-full">
           <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="w-14 h-14 rounded-full overflow-hidden border border-[#2E5E4E]/20 flex-shrink-0">
+            <div className="w-14 h-14 rounded-full overflow-hidden border border-[#4B6E6D]/20 flex-shrink-0">
               <img src="/rise-logo.png" alt="Rise logo" className="w-full h-full object-cover" />
             </div>
             <div>
-              <span className="text-2xl font-serif leading-tight block text-[#1E2A32]">Rise</span>
-              <p className="text-xs tracking-widest text-[#2E5E4E] uppercase">confront ~ grow ~ become</p>
+              <span className="text-2xl font-serif leading-tight block text-[#2C3E40]">Rise</span>
+              <p className="text-xs tracking-widest text-[#4B6E6D] uppercase">confront ~ grow ~ become</p>
             </div>
           </div>
 
-          <div className="w-full bg-white/90 backdrop-blur-sm border border-[#E5E0D5] p-6 sm:p-8 rounded-3xl shadow-lg">
+          <div className="w-full bg-white/90 backdrop-blur-sm border border-[#DCE4DC] p-6 sm:p-8 rounded-3xl shadow-lg">
             <button
               onClick={() => router.back()}
-              className="text-[#8A8478] text-sm mb-5 flex items-center gap-1 hover:text-[#5A6B7A] transition-colors"
+              className="text-[#8DA0A0] text-sm mb-5 flex items-center gap-1 hover:text-[#5E7473] transition-colors"
             >
               <ArrowLeft size={14} />
               Back
             </button>
 
             <div className="flex items-center gap-2 mb-4">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#2E5E4E]" />
-              <span className="text-xs font-semibold tracking-widest text-[#8A8478] uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4B6E6D]" />
+              <span className="text-xs font-semibold tracking-widest text-[#8DA0A0] uppercase">
                 {mode === "habit" ? "Habit tracker" : "Tazkiya"} onboarding
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-serif text-[#1E2A32] mb-3 leading-tight">Let&apos;s get to know you.</h1>
-            <p className="text-[#5A6B7A] mb-4">A few quick questions to start.</p>
+            <h1 className="text-2xl sm:text-3xl font-serif text-[#2C3E40] mb-3 leading-tight">Let&apos;s get to know you.</h1>
+            <p className="text-[#5E7473] mb-4">A few quick questions to start.</p>
 
-            <div className="flex items-start gap-2.5 bg-[#2E5E4E]/6 border border-[#2E5E4E]/15 rounded-2xl p-3.5 mb-6">
-              <MessageCircle size={16} className="text-[#2E5E4E] flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 bg-[#4B6E6D]/6 border border-[#4B6E6D]/15 rounded-2xl p-3.5 mb-6">
+              <MessageCircle size={16} className="text-[#4B6E6D] flex-shrink-0 mt-0.5" />
               <p className="text-xs text-[#3F5048] leading-relaxed">
                 Your answers help Rise&apos;s chat give you grounded, personal replies later — the more honest and specific you are here, the better Rise can recognize your own patterns when you ask it something.
               </p>
@@ -188,14 +187,14 @@ export default function OnboardingPage() {
             {questions.map((q, index) => (
               <div key={index} className="mb-5">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <label className="text-sm font-semibold text-[#1E2A32]">
+                  <label className="text-sm font-semibold text-[#2C3E40]">
                     {q.question} <span className="text-[#E0674F]">*</span>
                   </label>
                   <button
                     type="button"
                     onClick={() => toggleHint(index)}
                     className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
-                      openHint === index ? "bg-[#E8B84B] text-[#1E2A32]" : "bg-[#F4F1EA] text-[#B5822C] hover:bg-[#E8B84B]/30"
+                      openHint === index ? "bg-[#D6C6A8] text-[#2C3E40]" : "bg-[#EAF0E8] text-[#B5A07A] hover:bg-[#D6C6A8]/30"
                     }`}
                     aria-label="Show example options"
                   >
@@ -204,8 +203,8 @@ export default function OnboardingPage() {
                 </div>
 
                 {openHint === index && (
-                  <div className="bg-[#FBF3DC] border border-[#E8B84B]/40 rounded-xl p-3 mb-2">
-                    <p className="text-[11px] font-semibold text-[#8A6A1E] uppercase tracking-wide mb-2">
+                  <div className="bg-[#F0EEE0] border border-[#D6C6A8]/40 rounded-xl p-3 mb-2">
+                    <p className="text-[11px] font-semibold text-[#7A6B4A] uppercase tracking-wide mb-2">
                       Tap one to use it as a starting point
                     </p>
                     <div className="flex flex-col gap-1.5">
@@ -214,7 +213,7 @@ export default function OnboardingPage() {
                           key={optIndex}
                           type="button"
                           onClick={() => selectOption(index, option)}
-                          className="text-left text-xs text-[#5A4A1E] bg-white/70 hover:bg-white border border-[#E8B84B]/30 hover:border-[#E8B84B] rounded-lg px-3 py-2 transition-colors"
+                          className="text-left text-xs text-[#4A5548] bg-white/70 hover:bg-white border border-[#D6C6A8]/30 hover:border-[#D6C6A8] rounded-lg px-3 py-2 transition-colors"
                         >
                           {option}
                         </button>
@@ -224,8 +223,8 @@ export default function OnboardingPage() {
                 )}
 
                 <textarea
-                  className={`bg-[#F4F1EA] border p-3 w-full rounded-2xl focus:outline-none focus:border-[#2E5E4E] text-[#1E2A32] ${
-                    error && !answers[index].trim() ? "border-[#E0674F]/40" : "border-[#E5E0D5]"
+                  className={`bg-[#EAF0E8] border p-3 w-full rounded-2xl focus:outline-none focus:border-[#4B6E6D] text-[#2C3E40] ${
+                    error && !answers[index].trim() ? "border-[#E0674F]/40" : "border-[#DCE4DC]"
                   }`}
                   rows={2}
                   value={answers[index]}
@@ -237,7 +236,7 @@ export default function OnboardingPage() {
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="bg-[#2E5E4E] hover:bg-[#254D40] text-white px-4 py-3 rounded-full w-full font-semibold mt-2 transition-colors disabled:opacity-60"
+              className="bg-[#4B6E6D] hover:bg-[#3A5654] text-white px-4 py-3 rounded-full w-full font-semibold mt-2 transition-colors disabled:opacity-60"
             >
               {submitting ? "Saving..." : "Continue"}
             </button>

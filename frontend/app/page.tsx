@@ -10,7 +10,7 @@ export default function LandingPage() {
             <li><a href="#modes">Modes</a></li>
             <li><a href="#journey">How it works</a></li>
           </ul>
-          <a className="nav-cta" href="/login">Get started</a>
+          <a className="nav-cta" href="/signup">Get started</a>
         </nav>
       </div>
 
@@ -19,7 +19,7 @@ export default function LandingPage() {
 
         <div className="wrap">
           {/* doodle: thin vine, top-left, like the portfolio's corner vine */}
-          <svg className="doodle doodle-vine" width="70" height="200" viewBox="0 0 70 200" fill="none" stroke="#2E5E4E" strokeWidth="1.4">
+          <svg className="doodle doodle-vine" width="70" height="200" viewBox="0 0 70 200" fill="none" stroke="#4B6E6D" strokeWidth="1.4">
             <path d="M20 195 Q40 140 32 90 Q28 55 45 30 Q52 20 48 6"/>
             <circle cx="46" cy="8" r="6"/>
             <circle cx="18" cy="55" r="5.5"/>
@@ -27,7 +27,7 @@ export default function LandingPage() {
           </svg>
 
           {/* doodle: sparkles */}
-          <svg className="doodle doodle-sparkle-1" width="26" height="26" viewBox="0 0 26 26" fill="#B5822C">
+          <svg className="doodle doodle-sparkle-1" width="26" height="26" viewBox="0 0 26 26" fill="#B5A07A">
             <path d="M13 0 L15 11 L26 13 L15 15 L13 26 L11 15 L0 13 L11 11 Z"/>
           </svg>
           <svg className="doodle doodle-sparkle-2" width="18" height="18" viewBox="0 0 18 18" fill="#E0674F">
@@ -102,7 +102,7 @@ export default function LandingPage() {
       </section>
 
       <section className="grounded" id="grounded">
-        <svg className="doodle doodle-sparkle-3" width="20" height="20" viewBox="0 0 20 20" fill="#2E5E4E">
+        <svg className="doodle doodle-sparkle-3" width="20" height="20" viewBox="0 0 20 20" fill="#4B6E6D">
           <path d="M10 0 L11.5 8.5 L20 10 L11.5 11.5 L10 20 L8.5 11.5 L0 10 L8.5 8.5 Z"/>
         </svg>
         <div className="wrap">
@@ -121,7 +121,7 @@ export default function LandingPage() {
       </section>
 
       <div className="wrap cta-wrap">
-        <svg className="doodle doodle-vine-2" width="90" height="120" viewBox="0 0 90 120" fill="none" stroke="#F9F7F4" strokeWidth="1.4">
+        <svg className="doodle doodle-vine-2" width="90" height="120" viewBox="0 0 90 120" fill="none" stroke="#F2F6F0" strokeWidth="1.4">
           <path d="M10 115 Q40 80 30 45 Q26 20 50 4"/>
           <circle cx="50" cy="6" r="6"/>
           <circle cx="24" cy="55" r="5"/>
@@ -150,8 +150,8 @@ export default function LandingPage() {
 
       <style jsx global>{`
         :root{
-          --cream:#D7DDBC; --cream2:#F1ECE1; --sage-deep:#B3C08C; --ink:#1E2A32; --muted:#5A6B7A;
-          --cedar:#2E5E4E; --cedar-light:#5C8A78; --gold:#E8B84B; --gold-dark:#B5822C;
+          --cream:#D7DDBC; --cream2:#F1ECE1; --sage-deep:#B3C08C; --ink:#2C3E40; --muted:#5E7473;
+          --cedar:#4B6E6D; --cedar-light:#5C8A78; --gold:#D6C6A8; --gold-dark:#B5A07A;
           --terra:#E0674F; --line:rgba(30,42,50,0.1);
         }
         *{box-sizing:border-box; margin:0; padding:0;}
@@ -160,12 +160,12 @@ export default function LandingPage() {
         a{color:inherit;}
         .wrap{max-width:1450px; margin:0 auto; padding:0 32px; position:relative;}
 
-        nav{display:flex; align-items:center; justify-content:space-between; padding:34px 0; position:relative; z-index:5;}
-        .logo{display:flex; align-items:center; gap:10px; font-family:'Playfair Display'; font-style:italic; font-weight:600; font-size:23px;}
+        nav{display:flex; align-items:center; justify-content:space-between; gap:24px; padding:34px 0; position:relative; z-index:5;}
+        .logo{display:flex; align-items:center; gap:10px; font-family:'Playfair Display'; font-style:italic; font-weight:600; font-size:23px; flex-shrink:0;}
         .logo .mark{width:34px; height:34px; border-radius:50%; overflow:hidden; background:var(--cedar); flex-shrink:0;}
         nav ul{display:flex; gap:34px; list-style:none; font-size:14px; font-weight:500;}
         nav ul a{text-decoration:none; opacity:0.65;}
-        .nav-cta{background:var(--ink); color:var(--cream); padding:11px 24px; border-radius:999px; font-size:13.5px; font-weight:600; text-decoration:none;}
+        .nav-cta{background:var(--ink); color:var(--cream); padding:11px 24px; border-radius:999px; font-size:13.5px; font-weight:600; text-decoration:none; flex-shrink:0;}
 
         .hero{position:relative; padding:20px 0 100px; overflow:visible;}
         .doodle{position:absolute; pointer-events:none; z-index:6;}
@@ -177,8 +177,8 @@ export default function LandingPage() {
         .hero .doodle-sparkle-2{top:130px; left:6%; opacity:0.4; z-index:1;}
         .hero .doodle-note{
           position:absolute; top:16px; right:4%; z-index:3;
-          background:#FBF0C8; color:#5A4A1E;
-          padding:16px 18px; border-radius:4px; transform:rotate(4deg);
+          background:#FBF0C8; color:#4A5548;
+          padding:18px 20px; border-radius:10px; transform:rotate(3deg);
           box-shadow:0 6px 14px rgba(0,0,0,0.12);
           font-family:'Caveat',cursive; font-size:17px; line-height:1.35; font-weight:600;
           max-width:170px;
@@ -187,6 +187,11 @@ export default function LandingPage() {
           position:relative;
           border-radius:32px;
           padding:56px 44px 60px 180px;
+          min-height:420px;
+          display:flex;
+          flex-direction:column;
+          justify-content:center;
+          align-items:flex-start;
           background-image:
             linear-gradient(160deg, rgba(30,42,50,0.55) 0%, rgba(30,42,50,0.35) 55%, rgba(30,42,50,0.6) 100%),
             url('/rise-landing-bg.png');
@@ -198,14 +203,16 @@ export default function LandingPage() {
         }
         .hero-badge{
           position:absolute; top:28px; left:168px;
-          width:84px; height:84px; border-radius:50%;
-          background:rgba(232,184,75,0.9);
+          width:88px; height:88px;
+          background:rgba(232,184,75,0.95);
+          border-radius:50%;
           display:flex; align-items:center; justify-content:center;
           font-family:'Playfair Display'; font-style:italic; font-weight:700; font-size:17px; color:var(--ink);
           letter-spacing:0.02em;
+          box-shadow:0 6px 16px rgba(0,0,0,0.18);
         }
         .hero-kicker{
-          display:inline-block; margin-top:64px;
+          display:inline-block; align-self:flex-start; margin-top:52px;
           background:rgba(31,68,54,0.82); backdrop-filter:blur(3px);
           padding:10px 22px; border-radius:999px; font-size:14px; font-weight:600;
         }
@@ -213,9 +220,10 @@ export default function LandingPage() {
         .hero h1 .em{font-style:italic; font-weight:600;}
         .hero p.sub{font-size:15px; opacity:0.88; max-width:52ch; margin-bottom:24px;}
         .hero-cta{
-          display:inline-flex; align-items:center; gap:8px;
+          display:inline-flex; align-self:flex-start; align-items:center; gap:8px;
           background:var(--cream); color:var(--ink);
-          padding:11px 22px; border-radius:999px; font-weight:700; font-size:14px; text-decoration:none;
+          padding:12px 24px; border-radius:999px; font-weight:700; font-size:14px; text-decoration:none;
+          box-shadow:0 6px 16px rgba(0,0,0,0.15);
         }
 
         .story-line{padding:80px 0 60px; text-align:center; position:relative;}
@@ -224,7 +232,11 @@ export default function LandingPage() {
 
         .modes{padding:20px 0 90px;}
         .modes-head{max-width:56ch; margin:0 auto 50px; text-align:center;}
-        .modes-head .eyebrow{font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--cedar); font-weight:700; margin-bottom:14px; display:block;}
+        .modes-head .eyebrow{
+          display:inline-block; font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase;
+          color:var(--cedar); font-weight:700; margin-bottom:18px;
+          background:rgba(75,110,109,0.12); padding:8px 18px; border-radius:999px;
+        }
         .modes-head h2{font-size:32px; font-weight:600;}
         .mode-grid{display:grid; grid-template-columns:1fr 1fr; gap:24px;}
         .mode-card{
@@ -245,10 +257,14 @@ export default function LandingPage() {
           background:
             radial-gradient(circle at 15% 10%, rgba(232,184,75,0.18), transparent 45%),
             radial-gradient(circle at 90% 85%, rgba(46,94,78,0.22), transparent 50%),
-            linear-gradient(155deg, #4A5D73 0%, #3D4F63 60%, #33445A 100%);
+            linear-gradient(155deg, #4A5D73 0%, #4A5D73 60%, #33445A 100%);
           padding:90px 44px; color:white; border-radius:40px; width:100%;
         }
-        .journey .eyebrow{font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold); font-weight:700; margin-bottom:16px; display:block;}
+        .journey .eyebrow{
+          display:inline-block; font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase;
+          color:var(--gold); font-weight:700; margin-bottom:20px;
+          background:rgba(255,255,255,0.1); padding:8px 18px; border-radius:999px;
+        }
         .journey h2{font-size:30px; font-weight:600; max-width:20ch; margin-bottom:56px;}
         .journey-steps{display:flex; flex-direction:column; gap:0;}
         .jstep{display:grid; grid-template-columns:60px 1fr; gap:24px; padding:28px 0; border-top:1px solid rgba(255,255,255,0.15);}
@@ -271,10 +287,13 @@ export default function LandingPage() {
         .quote-card p{font-family:'Playfair Display'; font-style:italic; font-size:16px; line-height:1.7; margin-bottom:16px; color:var(--ink);}
         .quote-card .cite{font-size:12.5px; color:var(--muted); font-weight:600;}
 
-        .cta-wrap{padding-bottom:90px; position:relative; max-width:1450px; padding-left:32px; padding-right:32px;}
+        .cta-wrap{display:block; padding-bottom:90px; position:relative; max-width:1450px; padding-left:32px; padding-right:32px;}
         .cta-wrap .doodle-vine-2{bottom:-20px; right:-10px; opacity:0.3; z-index:0;}
         .cta-band{
-          border-radius:40px; padding:70px 40px; text-align:center;
+          width:100%; box-sizing:border-box;
+          border-radius:32px; padding:60px; text-align:center;
+          min-height:420px;
+          display:flex; flex-direction:column; align-items:center; justify-content:center;
           background-image:
             linear-gradient(160deg, rgba(30,42,50,0.6), rgba(46,94,78,0.55)),
             url('/rise-landing-bg.png');
@@ -285,7 +304,7 @@ export default function LandingPage() {
         .cta-band h2{font-size:30px; font-weight:500; margin-bottom:8px;}
         .cta-band h2 .em{font-style:italic; font-weight:600;}
         .cta-band p{font-size:15px; opacity:0.8; margin-bottom:28px;}
-        .cta-btn{display:inline-block; background:white; color:var(--ink); padding:16px 34px; border-radius:999px; font-weight:700; font-size:15px; text-decoration:none;}
+        .cta-btn{display:inline-block; background:white; color:var(--ink); padding:11px 24px; border-radius:999px; font-weight:700; font-size:14px; text-decoration:none;}
 
         footer{border-top:1px solid var(--line); padding:44px 0 28px;}
         .footer-top{display:flex; justify-content:space-between; margin-bottom:36px; flex-wrap:wrap; gap:24px;}

@@ -72,7 +72,17 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-5 sm:p-8 flex flex-col h-screen">
+    <div className="relative min-h-screen">
+      <div
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          backgroundImage: "url('/habits-bg.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          opacity: 0.15,
+        }}
+      />
+      <div className="relative z-10 max-w-2xl mx-auto p-5 sm:p-8 flex flex-col h-screen">
       <button onClick={() => router.push("/dashboard")} className="text-[#5A6B7A] text-sm mb-3 flex items-center gap-1 hover:text-[#1E2A32] transition-colors">
         <ArrowLeft size={14} /> Back to dashboard
       </button>
@@ -117,6 +127,7 @@ export default function ChatPage() {
             <Send size={16} />
           </button>
         </div>
+      </div>
       </div>
     </div>
   );
