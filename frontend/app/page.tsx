@@ -5,7 +5,10 @@ export default function LandingPage() {
     <>
       <div className="wrap">
         <nav>
-          <div className="logo"><div className="mark"></div> Rise</div>
+          <div className="logo">
+            <img src="/rise-logo.png" alt="Rise logo" className="mark" />
+            Rise
+          </div>
           <ul>
             <li><a href="#modes">Modes</a></li>
             <li><a href="#journey">How it works</a></li>
@@ -40,7 +43,9 @@ export default function LandingPage() {
           </div>
 
           <div className="hero-panel">
-            <div className="hero-badge">Rise</div>
+            <div className="hero-badge">
+              <img src="/rise-logo.png" alt="Rise logo" className="hero-badge-img" />
+            </div>
             <span className="hero-kicker">A coach for your habits and your heart</span>
             <h1>Track your days.<br/>Tend to your <span className="em">nafs</span>.</h1>
             <p className="sub">Rise logs what you do and how you&apos;re doing, then reflects it back through an AI coach that only speaks from your own history and real classical texts — never guesses, never fabricates.</p>
@@ -137,7 +142,10 @@ export default function LandingPage() {
         <div className="wrap">
           <div className="footer-top">
             <div>
-              <div className="logo"><div className="mark"></div> Rise</div>
+              <div className="logo">
+                <img src="/rise-logo.png" alt="Rise logo" className="mark" />
+                Rise
+              </div>
               <p className="tag">Habit and tazkiya coaching, grounded in your own history and real classical sources.</p>
             </div>
           </div>
@@ -168,7 +176,10 @@ export default function LandingPage() {
 
         nav{display:flex; align-items:center; justify-content:space-between; gap:24px; padding:34px 0; position:relative; z-index:5;}
         .logo{display:flex; align-items:center; gap:10px; font-family:'Playfair Display'; font-style:italic; font-weight:600; font-size:23px; flex-shrink:0;}
-        .logo .mark{width:34px; height:34px; border-radius:50%; overflow:hidden; background:var(--cedar); flex-shrink:0;}
+        .logo .mark{
+          width:34px; height:34px; border-radius:50%; overflow:hidden;
+          flex-shrink:0; object-fit:cover; display:block;
+        }
         nav ul{display:flex; gap:34px; list-style:none; font-size:14px; font-weight:500;}
         nav ul a{text-decoration:none; opacity:0.65;}
         .nav-cta{background:var(--ink); color:var(--cream); padding:11px 24px; border-radius:999px; font-size:13.5px; font-weight:600; text-decoration:none; flex-shrink:0;}
@@ -213,9 +224,11 @@ export default function LandingPage() {
           background:rgba(232,184,75,0.95);
           border-radius:50%;
           display:flex; align-items:center; justify-content:center;
-          font-family:'Playfair Display'; font-style:italic; font-weight:700; font-size:17px; color:var(--ink);
-          letter-spacing:0.02em;
+          overflow:hidden;
           box-shadow:0 6px 16px rgba(0,0,0,0.18);
+        }
+        .hero-badge-img{
+          width:100%; height:100%; object-fit:cover; border-radius:50%;
         }
         .hero-kicker{
           display:inline-block; align-self:flex-start; margin-top:90px;
