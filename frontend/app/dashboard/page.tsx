@@ -39,7 +39,7 @@ export default function DashboardPage() {
     const userId = getUserId();
     if (!userId) { setLoading(false); return; }
     try {
-      const res = await fetch(`https://occupier-squall-handmade.ngrok-free.dev/dashboard/${userId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/${userId}`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const json = await res.json();

@@ -50,7 +50,7 @@ export default function ChatPage() {
     // { user_id, message } and returns { response: string } — adjust field names
     // once the actual RAG pipeline contract (Arooba's side) is confirmed.
     try {
-      const res = await fetch("https://occupier-squall-handmade.ngrok-free.dev/chat", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ user_id: getUserId(), message: userMsg.content }),

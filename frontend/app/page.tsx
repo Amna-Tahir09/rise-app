@@ -158,7 +158,13 @@ export default function LandingPage() {
         body{font-family:'Inter',sans-serif; background:var(--cream); color:var(--ink); line-height:1.65; overflow-x:hidden;}
         h1,h2,h3{font-family:'Playfair Display',serif; line-height:1.15;}
         a{color:inherit;}
-        .wrap{max-width:1450px; margin:0 auto; padding:0 32px; position:relative;}
+        .wrap{max-width:1450px; margin:0 auto; padding:0 32px; position:relative; width:100%; box-sizing:border-box;}
+
+        /* Guard against a parent flex/center context shrinking these top-level
+           sections — each one is forced to take the full available width. */
+        .hero, .story-line, .modes, .journey-outer, .grounded, footer{
+          width:100%; box-sizing:border-box;
+        }
 
         nav{display:flex; align-items:center; justify-content:space-between; gap:24px; padding:34px 0; position:relative; z-index:5;}
         .logo{display:flex; align-items:center; gap:10px; font-family:'Playfair Display'; font-style:italic; font-weight:600; font-size:23px; flex-shrink:0;}
@@ -212,7 +218,7 @@ export default function LandingPage() {
           box-shadow:0 6px 16px rgba(0,0,0,0.18);
         }
         .hero-kicker{
-          display:inline-block; align-self:flex-start; margin-top:52px;
+          display:inline-block; align-self:flex-start; margin-top:90px;
           background:rgba(31,68,54,0.82); backdrop-filter:blur(3px);
           padding:10px 22px; border-radius:999px; font-size:14px; font-weight:600;
         }
