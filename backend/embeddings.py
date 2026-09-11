@@ -19,13 +19,17 @@ requirements.txt change needed:
 """
 
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import requests
 from typing import List
 
 # Same model we were using locally — the API serves the exact same model,
 # so embedding quality and dimensions (384) are identical to before.
 HF_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-HF_API_URL = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{HF_MODEL}"
+HF_API_URL = f"https://router.huggingface.co/hf-inference/models/{HF_MODEL}/pipeline/feature-extraction"
 
 HF_API_TOKEN = os.getenv("HF_API_TOKEN")
 
