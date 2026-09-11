@@ -1,177 +1,139 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { CheckSquare, Plus, Trash2, X, Pencil, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Plus, Pencil, Trash2, X, SquareCheck } from "lucide-react";
 
-interface Habit {
-  id: string;
-  name: string;
-  time?: string;
-  note?: string;
-}
+type Habit = { id: string; name: string; time?: string; note?: string };
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
+// CONFIRM: user_id source — localStorage("rise_user_id") set at login/signup, or decoded from JWT?
+const getUserId = () => localStorage.getItem("rise_user_id") || "";
+const getToken = () => localStorage.getItem("rise_access_token") || "";
 
 export default function HabitsPage() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [todayLog, setTodayLog] = useState<string[]>([]);
-  const [showForm, setShowForm] = useState(false);
+  const [name, setName] = useState("");
+  const [time, setTime] = useState("");
+  const [note, setNote] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [nameInput, setNameInput] = useState("");
-  const [timeInput, setTimeInput] = useState("");
-  const [noteInput, setNoteInput] = useState("");
+  const [formOpen, setFormOpen] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    const list: Habit[] = JSON.parse(localStorage.getItem("rise_habits_list") || "[]");
-    setHabits(list);
-    const log: string[] = JSON.parse(localStorage.getItem(`rise_habit_log_${todayKey()}`) || "[]");
-    setTodayLog(log);
+    const savedHabits = JSON.parse(localStorage.getItem("rise_habits_list") || "[]");
+    const savedLog = JSON.parse(localStorage.getItem(`rise_habit_log_${todayKey()}`) || "[]");
+    setHabits(savedHabits);
+    setTodayLog(savedLog);
   }, []);
 
-  const saveHabits = (list: Habit[]) => {
-    setHabits(list);
-    localStorage.setItem("rise_habits_list", JSON.stringify(list));
+  const saveHabits = (updated: Habit[]) => {
+    setHabits(updated);
+    localStorage.setItem("rise_habits_list", JSON.stringify(updated));
   };
 
-  const toggleHabit = (id: string) => {
-    const updated = todayLog.includes(id)
-      ? todayLog.filter((h) => h !== id)
-      : [...todayLog, id];
-    setTodayLog(updated);
-    localStorage.setItem(`rise_habit_log_${todayKey()}`, JSON.stringify(updated));
-  };
+  const resetForm = () => { setName(""); setTime(""); setNote(""); setEditingId(null); };
 
-  const openAddForm = () => {
-    setEditingId(null);
-    setNameInput("");
-    setTimeInput("");
-    setNoteInput("");
-    setShowForm(true);
-  };
+  const openNewForm = () => { resetForm(); setFormOpen(true); };
+  const closeForm = () => { resetForm(); setFormOpen(false); };
 
-  const openEditForm = (habit: Habit) => {
-    setEditingId(habit.id);
-    setNameInput(habit.name);
-    setTimeInput(habit.time || "");
-    setNoteInput(habit.note || "");
-    setShowForm(true);
-  };
-
-  const closeForm = () => {
-    setShowForm(false);
-    setEditingId(null);
-  };
-
-  const handleSubmit = () => {
-    if (!nameInput.trim()) return;
-
+  const handleSave = async () => {
+    if (!name.trim()) return;
+    let updated: Habit[];
     if (editingId) {
-      const updated = habits.map((h) =>
-        h.id === editingId
-          ? { ...h, name: nameInput.trim(), time: timeInput.trim() || undefined, note: noteInput.trim() || undefined }
-          : h
-      );
-      saveHabits(updated);
+      updated = habits.map((h) => (h.id === editingId ? { ...h, name, time, note } : h));
     } else {
-      const habit: Habit = {
-        id: crypto.randomUUID(),
-        name: nameInput.trim(),
-        time: timeInput.trim() || undefined,
-        note: noteInput.trim() || undefined,
-      };
-      saveHabits([...habits, habit]);
+      const newHabit: Habit = { id: crypto.randomUUID(), name, time, note };
+      updated = [...habits, newHabit];
     }
-
+    saveHabits(updated);
     closeForm();
+    // CONFIRM: does /habit-log also handle creating the habit definition, or is there a
+    // separate route (e.g. POST /habits) for that? Sending as a "not logged yet" entry for now.
+        try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/habit-log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ user_id: getUserId(), habit_name: name, date: todayKey(), logged: false, note }),
+      });
+    } catch (err) { console.error("Failed to sync habit to server:", err); }
   };
 
-  const deleteHabit = (id: string) => {
+  const handleEdit = (habit: Habit) => {
+    setEditingId(habit.id); setName(habit.name); setTime(habit.time || ""); setNote(habit.note || "");
+    setFormOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
     saveHabits(habits.filter((h) => h.id !== id));
-    const updatedLog = todayLog.filter((h) => h !== id);
-    setTodayLog(updatedLog);
-    localStorage.setItem(`rise_habit_log_${todayKey()}`, JSON.stringify(updatedLog));
     if (editingId === id) closeForm();
   };
 
-  const completedCount = todayLog.length;
+  const toggleDone = async (habitId: string, habitName: string) => {
+    const isDone = todayLog.includes(habitId);
+    const updated = isDone ? todayLog.filter((id) => id !== habitId) : [...todayLog, habitId];
+    setTodayLog(updated);
+    localStorage.setItem(`rise_habit_log_${todayKey()}`, JSON.stringify(updated));
+ try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/habit-log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ user_id: getUserId(), habit_id: habitId, habit_name: habitName, date: todayKey(), logged: !isDone }),
+      });
+    } catch (err) { console.error("Failed to sync habit-log to server:", err); }
+  };
+
+  const doneCount = habits.filter((h) => todayLog.includes(h.id)).length;
 
   return (
-    <div className="max-w-2xl mx-auto w-full px-1 sm:px-0">
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-[#3C6E7A] transition-colors mb-4"
-      >
-        <ArrowLeft size={14} />
-        Back to dashboard
-      </Link>
+    <div className="relative min-h-full">
+      <div
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          backgroundImage: "url('/habits-bg1.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          opacity: 0.15,
+        }}
+      />
+      <div className="relative z-10 max-w-3xl mx-auto p-5 sm:p-8">
+      <button onClick={() => router.push("/dashboard")} className="text-[#5A6B7A] text-sm mb-4 flex items-center gap-1 hover:text-[#1E2A32] transition-colors">
+        <ArrowLeft size={14} /> Back to dashboard
+      </button>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif text-stone-900 flex items-center gap-2">
-            Habits Tracker <CheckSquare size={20} className="text-[#3C6E7A]" />
+          <h1 className="text-3xl font-serif text-[#1E2A32] flex items-center gap-2">
+            Habits Tracker <SquareCheck size={24} className="text-[#2E5E4E]" />
           </h1>
-          <p className="text-sm text-stone-500 mt-1">
-            {completedCount} of {habits.length} done today
-          </p>
+          <p className="text-sm text-[#5A6B7A] mt-1">{doneCount} of {habits.length} done today</p>
         </div>
-        <button
-          onClick={openAddForm}
-          className="flex items-center justify-center gap-2 bg-[#3C6E7A] hover:bg-[#2C5560] text-white text-sm font-semibold px-4 py-2.5 rounded-full transition-colors w-full sm:w-auto"
-        >
-          <Plus size={16} />
-          Add habit
+        <button onClick={openNewForm} className="flex items-center gap-2 bg-[#2E5E4E] hover:bg-[#254D40] text-white px-5 py-2.5 rounded-full font-semibold text-sm transition-colors">
+          <Plus size={16} /> Add habit
         </button>
       </div>
 
-      {showForm && (
-        <div className="bg-white border border-stone-200 rounded-2xl p-5 sm:p-6 mb-6 relative">
-          <button
-            onClick={closeForm}
-            className="absolute top-4 right-4 text-stone-400 hover:text-stone-600"
-          >
-            <X size={18} />
-          </button>
-          <h3 className="text-sm font-semibold text-stone-800 mb-4">
-            {editingId ? "Edit habit" : "New habit"}
-          </h3>
-
-          <label className="block text-xs font-semibold text-stone-600 mb-1">Name</label>
-          <input
-            value={nameInput}
-            onChange={(e) => setNameInput(e.target.value)}
-            placeholder="e.g. Morning walk"
-            className="w-full bg-stone-100 border border-stone-200 p-3 rounded-xl mb-4 outline-none focus:border-[#3C6E7A] text-stone-800"
-          />
-
-          <label className="block text-xs font-semibold text-stone-600 mb-1">Time (optional)</label>
-          <input
-            value={timeInput}
-            onChange={(e) => setTimeInput(e.target.value)}
-            placeholder="e.g. 7:00 AM"
-            className="w-full bg-stone-100 border border-stone-200 p-3 rounded-xl mb-4 outline-none focus:border-[#3C6E7A] text-stone-800"
-          />
-
-          <label className="block text-xs font-semibold text-stone-600 mb-1">Note (optional)</label>
-          <input
-            value={noteInput}
-            onChange={(e) => setNoteInput(e.target.value)}
-            placeholder="e.g. 20 minutes minimum"
-            className="w-full bg-stone-100 border border-stone-200 p-3 rounded-xl mb-5 outline-none focus:border-[#3C6E7A] text-stone-800"
-          />
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={handleSubmit}
-              className="bg-[#3C6E7A] hover:bg-[#2C5560] text-white px-4 py-2.5 rounded-full flex-1 font-semibold transition-colors"
-            >
+      {formOpen && (
+        <div className="bg-white border-2 border-[#2E5E4E] rounded-2xl p-6 mb-5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-semibold text-[#1E2A32]">{editingId ? "Edit habit" : "New habit"}</p>
+            <button onClick={closeForm} className="text-[#8A8478] hover:text-[#1E2A32] transition-colors">
+              <X size={18} />
+            </button>
+          </div>
+          <label className="block text-xs font-semibold text-[#5A6B7A] mb-1.5">Name</label>
+          <input id="habit-name-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Morning walk" className="w-full bg-[#F4F1EA] border border-[#E5E0D5] px-3.5 py-2.5 rounded-xl text-sm mb-3.5 focus:outline-none focus:border-[#2E5E4E]" />
+          <label className="block text-xs font-semibold text-[#5A6B7A] mb-1.5">Time (optional)</label>
+          <input value={time} onChange={(e) => setTime(e.target.value)} placeholder="e.g. 7:00 AM" className="w-full bg-[#F4F1EA] border border-[#E5E0D5] px-3.5 py-2.5 rounded-xl text-sm mb-3.5 focus:outline-none focus:border-[#2E5E4E]" />
+          <label className="block text-xs font-semibold text-[#5A6B7A] mb-1.5">Note (optional)</label>
+          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. 20 minutes minimum" className="w-full bg-[#F4F1EA] border border-[#E5E0D5] px-3.5 py-2.5 rounded-xl text-sm mb-4 focus:outline-none focus:border-[#2E5E4E]" />
+          <div className="flex gap-2">
+            <button onClick={handleSave} className="flex-1 bg-[#2E5E4E] hover:bg-[#254D40] text-white rounded-full py-2.5 font-semibold text-sm transition-colors">
               {editingId ? "Save changes" : "Add habit"}
             </button>
             {editingId && (
-              <button
-                onClick={() => deleteHabit(editingId)}
-                className="text-red-500 hover:bg-red-50 px-4 py-2.5 rounded-full font-semibold transition-colors border border-red-200"
-              >
+              <button onClick={() => handleDelete(editingId)} className="px-5 border border-[#E0674F]/40 text-[#E0674F] rounded-full text-sm font-semibold hover:bg-[#E0674F]/5 transition-colors">
                 Delete
               </button>
             )}
@@ -180,67 +142,29 @@ export default function HabitsPage() {
       )}
 
       {habits.length === 0 ? (
-        <div className="bg-white border border-stone-200 rounded-2xl p-8 sm:p-12 text-center">
-          <div className="w-12 h-12 rounded-full bg-[#3C6E7A]/10 flex items-center justify-center mx-auto mb-4">
-            <CheckSquare className="text-[#3C6E7A]" size={22} />
-          </div>
-          <p className="text-stone-700 font-medium mb-1">No habits yet</p>
-          <p className="text-stone-400 text-sm mb-5">Start with one small habit you want to build.</p>
-          <button
-            onClick={openAddForm}
-            className="inline-flex items-center gap-2 bg-[#3C6E7A] hover:bg-[#2C5560] text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors"
-          >
-            <Plus size={16} />
-            Add your first habit
-          </button>
-        </div>
+        <div className="text-center py-14 text-[#8A8478]"><p className="text-sm mb-3">No habits yet</p></div>
       ) : (
-        <div className="space-y-3">
-          {habits.map((habit) => {
-            const done = todayLog.includes(habit.id);
-            return (
-              <div
-                key={habit.id}
-                className={`flex items-center justify-between gap-3 p-4 rounded-2xl border transition-all ${
-                  done ? "border-[#3C6E7A] bg-[#3C6E7A]/5" : "border-stone-200 bg-white"
-                }`}
-              >
-                <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
-                  <input
-                    type="checkbox"
-                    checked={done}
-                    onChange={() => toggleHabit(habit.id)}
-                    className="w-5 h-5 accent-[#3C6E7A] flex-shrink-0"
-                  />
-                  <div className="min-w-0">
-                    <p className={`text-sm truncate ${done ? "text-stone-900 font-medium" : "text-stone-700"}`}>
-                      {habit.name}
-                    </p>
-                    {habit.note && <p className="text-xs text-stone-400 truncate">{habit.note}</p>}
-                  </div>
-                </label>
-                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                  {habit.time && <span className="hidden sm:inline text-xs text-stone-400">{habit.time}</span>}
-                  <button
-                    onClick={() => openEditForm(habit)}
-                    className="text-stone-300 hover:text-[#3C6E7A] transition-colors"
-                    aria-label="Edit habit"
-                  >
-                    <Pencil size={16} />
-                  </button>
-                  <button
-                    onClick={() => deleteHabit(habit.id)}
-                    className="text-stone-300 hover:text-red-500 transition-colors"
-                    aria-label="Delete habit"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+        habits.map((habit) => {
+          const isDone = todayLog.includes(habit.id);
+          return (
+            <div key={habit.id} className={`flex items-center justify-between p-4 rounded-2xl border mb-2.5 transition-colors ${isDone ? "border-[#2E5E4E] bg-[#2E5E4E]/5" : "border-[#E5E0D5] bg-white"}`}>
+              <button onClick={() => toggleDone(habit.id, habit.name)} className="flex items-center gap-3 flex-1 text-left">
+                <div className={`w-5 h-5 rounded-md border-2 flex-shrink-0 ${isDone ? "bg-[#2E5E4E] border-[#2E5E4E]" : "border-[#C9C4B8]"}`} />
+                <div>
+                  <div className="text-sm text-[#1E2A32]">{habit.name}</div>
+                  {habit.note && <div className="text-xs text-[#8A8478] mt-0.5">{habit.note}</div>}
                 </div>
+              </button>
+              <div className="flex items-center gap-3">
+                {habit.time && <span className="text-xs text-[#8A8478]">{habit.time}</span>}
+                <button onClick={() => handleEdit(habit)} className="text-[#C9C4B8] hover:text-[#2E5E4E]"><Pencil size={15} /></button>
+                <button onClick={() => handleDelete(habit.id)} className="text-[#C9C4B8] hover:text-[#E0674F]"><Trash2 size={15} /></button>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })
       )}
+      </div>
     </div>
   );
 }

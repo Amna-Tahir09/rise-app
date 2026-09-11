@@ -34,60 +34,8 @@ const TAZKIYA_NAV_ITEMS = [
   { href: "/dashboard/chat", label: "Ask Rise", icon: MessageCircle },
 ];
 
-const todayKey = () => new Date().toISOString().slice(0, 10);
-
-function calcBestStreak(): number {
-  const habits: { id: string }[] = JSON.parse(localStorage.getItem("rise_habits_list") || "[]");
-  let best = 0;
-
-  habits.forEach((habit) => {
-    let streak = 0;
-    let cursor = new Date();
-    let skippedToday = false;
-
-    while (true) {
-      const key = cursor.toISOString().slice(0, 10);
-      const log: string[] = JSON.parse(localStorage.getItem(`rise_habit_log_${key}`) || "[]");
-      const done = log.includes(habit.id);
-
-      if (done) {
-        streak++;
-        cursor.setDate(cursor.getDate() - 1);
-      } else if (!skippedToday && key === todayKey()) {
-        skippedToday = true;
-        cursor.setDate(cursor.getDate() - 1);
-      } else {
-        break;
-      }
-    }
-    best = Math.max(best, streak);
-  });
-
-  return best;
-}
-
-function calcTodayRate(): number {
-  const habits: { id: string }[] = JSON.parse(localStorage.getItem("rise_habits_list") || "[]");
-  if (!habits.length) return 0;
-  const log: string[] = JSON.parse(localStorage.getItem(`rise_habit_log_${todayKey()}`) || "[]");
-  return Math.round((log.length / habits.length) * 100);
-}
-
-function calcTawbahStreak(): number {
-  let streak = 0;
-  let cursor = new Date();
-  while (true) {
-    const key = cursor.toISOString().slice(0, 10);
-    const done = localStorage.getItem(`rise_muhasaba_log_${key}`);
-    if (done) {
-      streak++;
-      cursor.setDate(cursor.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-  return streak;
-}
+const getUserId = () => localStorage.getItem("rise_user_id") || "";
+const getToken = () => localStorage.getItem("rise_access_token") || "";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -100,41 +48,50 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [tawbahStreak, setTawbahStreak] = useState(0);
   const [mounted, setMounted] = useState(false);
 
+  // Fetch the same GET /dashboard/{user_id} data the dashboard page uses, so the
+  // sidebar's streak/progress numbers always match what's shown on the page itself.
+  // CONFIRM: response field names (best_streak, today_rate, muhasaba_streak) — see
+  // the note in app/dashboard/page.tsx for the full list of fields we're assuming.
+  const fetchStats = async () => {
+    const userId = getUserId();
+    if (!userId) return;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/${userId}`, {
+        headers: { "ngrok-skip-browser-warning": "true", Authorization: `Bearer ${getToken()}` },
+      });
+      const data = await res.json();
+      setStreak(data.best_streak ?? 0);
+      setTodayRate(data.today_rate ?? 0);
+      setTawbahStreak(data.muhasaba_streak ?? 0);
+    } catch (err) {
+      console.error("Failed to load sidebar stats from server:", err);
+    }
+  };
+
   useEffect(() => {
     setMounted(true);
-
     const savedMode = localStorage.getItem("rise_mode");
     if (savedMode) setMode(savedMode);
     setUsername(localStorage.getItem("rise_username"));
-    setStreak(calcBestStreak());
-    setTodayRate(calcTodayRate());
-    setTawbahStreak(calcTawbahStreak());
+    fetchStats();
 
     const handleModeChange = () => {
       const updated = localStorage.getItem("rise_mode");
       if (updated) setMode(updated);
     };
-    const refreshStats = () => {
-      setStreak(calcBestStreak());
-      setTodayRate(calcTodayRate());
-      setTawbahStreak(calcTawbahStreak());
-    };
     window.addEventListener("rise-mode-changed", handleModeChange);
-    window.addEventListener("focus", refreshStats);
+    window.addEventListener("focus", fetchStats);
     return () => {
       window.removeEventListener("rise-mode-changed", handleModeChange);
-      window.removeEventListener("focus", refreshStats);
+      window.removeEventListener("focus", fetchStats);
     };
   }, []);
 
-  // Fix: Tazkiya streak wasn't syncing between the dashboard page and this
-  // sidebar, because layout.tsx doesn't remount on navigation. Recalculate
-  // whenever the route changes so the sidebar number stays in sync.
+  // Re-fetch on every route change so the sidebar stays in sync with whatever
+  // was just saved on the page the user came from (habit log, muhasaba, etc.).
   useEffect(() => {
     if (!mounted) return;
-    setStreak(calcBestStreak());
-    setTodayRate(calcTodayRate());
-    setTawbahStreak(calcTawbahStreak());
+    fetchStats();
   }, [pathname, mounted]);
 
   const navItems = mode === "habit" ? HABIT_NAV_ITEMS : TAZKIYA_NAV_ITEMS;
@@ -165,19 +122,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const displayName = username || "Guest";
   const initial = username ? username[0].toUpperCase() : "G";
   const isLoggedIn = !!username;
-
-  // Fix: hydration mismatch. Server always rendered the sidebar (since
-  // sidebarOpen starts true), but if we ever conditionally hid it before
-  // mount, server/client output would differ. Rendering unconditionally
-  // like this, with sidebarOpen simply controlling visibility via the
-  // "hidden" guard below, keeps server and client markup identical on
-  // first paint while still letting the toggle work normally after mount.
   const showSidebar = !mounted || sidebarOpen;
 
   return (
-    <div className="min-h-screen flex bg-[#F7F3EC]">
+    <div className="min-h-screen flex bg-[#F2F6F0]">
       {showSidebar && (
-        <aside className="w-64 bg-[#2C5560] p-6 flex-shrink-0 flex flex-col">
+        <aside
+          className="w-64 p-6 flex-shrink-0 flex flex-col relative overflow-hidden"
+          style={{
+            background:
+              mode === "habit"
+                ? "radial-gradient(circle at 15% 10%, rgba(232,184,75,0.14), transparent 45%), radial-gradient(circle at 90% 85%, rgba(255,255,255,0.06), transparent 50%), #3A5654"
+                : "radial-gradient(circle at 15% 10%, rgba(232,184,75,0.13), transparent 45%), radial-gradient(circle at 90% 85%, rgba(46,94,78,0.16), transparent 50%), linear-gradient(155deg, #4A5D73 0%, #3A4A5D 60%, #2C3944 100%)",
+          }}
+        >
+          <div className="relative z-10 flex flex-col h-full">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-full overflow-hidden border border-white/30 flex-shrink-0">
@@ -185,17 +144,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
               <span className="text-xl font-serif text-white">Rise</span>
             </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="text-white/60 hover:text-white p-1"
-              aria-label="Close sidebar"
-            >
+            <button onClick={() => setSidebarOpen(false)} className="text-white/60 hover:text-white p-1" aria-label="Close sidebar">
               <Menu size={20} />
             </button>
           </div>
-          <p className="text-xs tracking-widest text-white/60 uppercase mb-6 ml-11">
-            confront ~ grow ~ become
-          </p>
+          <p className="text-xs tracking-widest text-white/60 uppercase mb-6 ml-11">confront ~ grow ~ become</p>
 
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-full bg-white/15 text-white font-bold flex items-center justify-center flex-shrink-0">
@@ -209,19 +162,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {mode === "habit" ? (
             <>
-              {/* Quick add habit */}
-              <Link
-                href="/dashboard/habits"
-                className="flex items-center justify-center gap-2 mb-4 bg-white hover:bg-stone-100 text-[#3C6E7A] text-sm font-semibold px-3 py-2.5 rounded-xl transition-colors"
-              >
-                <Plus size={16} />
-                Add habit
+              <Link href="/dashboard/habits" className="flex items-center justify-center gap-2 mb-4 bg-white hover:bg-[#EAF0E8] text-[#4B6E6D] text-sm font-semibold px-3 py-2.5 rounded-xl transition-colors">
+                <Plus size={16} /> Add habit
               </Link>
-
-              {/* Streak + progress */}
               <div className="grid grid-cols-2 gap-2 mb-6">
                 <div className="bg-white/10 border border-white/15 rounded-xl p-3 flex flex-col items-center">
-                  <Flame className="text-white" size={16} />
+                  <Flame className="text-[#D6C6A8]" size={16} />
                   <p className="text-lg font-serif text-white mt-1">{streak}</p>
                   <p className="text-[10px] text-white/60 uppercase tracking-wide">Streak</p>
                 </div>
@@ -229,16 +175,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="relative w-9 h-9">
                     <svg viewBox="0 0 36 36" className="w-9 h-9 -rotate-90">
                       <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="4" />
-                      <circle
-                        cx="18"
-                        cy="18"
-                        r="15"
-                        fill="none"
-                        stroke="#FFFFFF"
-                        strokeWidth="4"
-                        strokeLinecap="round"
-                        strokeDasharray={`${(todayRate / 100) * 94} 94`}
-                      />
+                      <circle cx="18" cy="18" r="15" fill="none" stroke="#D6C6A8" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${(todayRate / 100) * 94} 94`} />
                     </svg>
                   </div>
                   <p className="text-[10px] text-white/60 uppercase tracking-wide mt-1">{todayRate}% today</p>
@@ -247,18 +184,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </>
           ) : (
             <>
-              {/* Quick add muhasaba */}
-              <Link
-                href="/dashboard/muhasaba"
-                className="flex items-center justify-center gap-2 mb-4 bg-white hover:bg-stone-100 text-[#3C6E7A] text-sm font-semibold px-3 py-2.5 rounded-xl transition-colors"
-              >
-                <Plus size={16} />
-                Reflect today
+              <Link href="/dashboard/muhasaba" className="flex items-center justify-center gap-2 mb-4 bg-white hover:bg-[#EAF0E8] text-[#4B6E6D] text-sm font-semibold px-3 py-2.5 rounded-xl transition-colors">
+                <Plus size={16} /> Reflect today
               </Link>
-
-              {/* Tawbah streak */}
               <div className="bg-white/10 border border-white/15 rounded-xl p-3 flex items-center justify-center gap-2 mb-6">
-                <Flame className="text-white" size={16} />
+                <Flame className="text-[#D6C6A8]" size={16} />
                 <span className="text-lg font-serif text-white">{tawbahStreak}</span>
                 <span className="text-[10px] text-white/60 uppercase tracking-wide">Day Streak</span>
               </div>
@@ -273,11 +203,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${
-                    active
-                      ? "bg-white/15 text-white font-semibold"
-                      : "text-white/70 hover:bg-white/10"
-                  }`}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${active ? "bg-white/15 text-white font-semibold" : "text-white/70 hover:bg-white/10"}`}
                 >
                   <Icon size={18} />
                   {item.label}
@@ -286,32 +212,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             })}
           </nav>
 
-          <button
-            onClick={switchMode}
-            className="mt-6 flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-white/80 border border-white/25 hover:bg-white/10 transition-all"
-          >
+          <button onClick={switchMode} className="mt-6 flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-white/80 border border-white/25 hover:bg-white/10 transition-all">
             <Compass size={16} />
             {mode === "habit" ? "Switch to Tazkiya" : "Switch to Habit Tracker"}
           </button>
 
           <div className="mt-4 pt-4 border-t border-white/20">
             {isLoggedIn ? (
-              <button
-                onClick={handleSignOut}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-red-200 hover:bg-red-500/10 transition-all"
-              >
-                <LogOut size={16} />
-                Sign Out
+              <button onClick={handleSignOut} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-red-200 hover:bg-red-500/10 transition-all">
+                <LogOut size={16} /> Sign Out
               </button>
             ) : (
-              <button
-                onClick={handleSignIn}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-white hover:bg-white/10 transition-all"
-              >
-                <LogIn size={16} />
-                Sign In
+              <button onClick={handleSignIn} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-white hover:bg-white/10 transition-all">
+                <LogIn size={16} /> Sign In
               </button>
             )}
+          </div>
           </div>
         </aside>
       )}
@@ -319,23 +235,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <main className="flex-1 p-8">
         <div className="flex items-center justify-between mb-4">
           {mounted && !sidebarOpen ? (
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="text-[#3C6E7A] p-2 bg-white rounded-xl shadow-sm border border-stone-200"
-              aria-label="Open sidebar"
-            >
+            <button onClick={() => setSidebarOpen(true)} className="text-[#4B6E6D] p-2 bg-white rounded-xl shadow-sm border border-[#DCE4DC]" aria-label="Open sidebar">
               <Menu size={20} />
             </button>
           ) : (
             <span />
           )}
-
-          <button
-            onClick={() => router.push("/mode")}
-            className="flex items-center gap-1 text-sm text-stone-500 hover:text-[#3C6E7A] transition-colors"
-          >
-            <ArrowLeft size={14} />
-            Change mode
+          <button onClick={() => router.push("/mode")} className="flex items-center gap-1 text-sm text-[#5E7473] hover:text-[#4B6E6D] transition-colors">
+            <ArrowLeft size={14} /> Change mode
           </button>
         </div>
         {children}

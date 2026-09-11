@@ -10,48 +10,67 @@ export default function ModePage() {
 
   const handleContinue = () => {
     localStorage.setItem("rise_mode", mode);
-    router.push("/onboarding");
+    router.replace("/onboarding");
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F3EC] flex flex-col items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-14 h-14 rounded-full overflow-hidden border border-[#3C6E7A]/20 flex-shrink-0">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#F9F7F4]">
+      {/* Background photo layer */}
+      <div
+        className="fixed inset-0 z-0"
+        style={{
+          backgroundImage: "url('/rise-landing-bg.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          opacity: 0.8,
+        }}
+      />
+
+      <div className="relative z-10 w-full flex flex-col items-center">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-14 h-14 rounded-full overflow-hidden border border-[#2E5E4E]/20 flex-shrink-0">
             <img src="/rise-logo.png" alt="Rise logo" className="w-full h-full object-cover" />
           </div>
           <div>
-            <span className="text-2xl font-serif leading-tight block bg-gradient-to-r from-[#1C1917] to-[#3C6E7A] bg-clip-text text-transparent">
-              Rise
-            </span>
-            <p className="text-xs tracking-widest text-stone-400 uppercase">confront ~ grow ~ become</p>
+            <span className="text-2xl font-serif leading-tight block text-[#1E2A32]">Rise</span>
+            <p className="text-xs tracking-widest text-[#2E5E4E] uppercase">confront ~ grow ~ become</p>
           </div>
         </div>
 
-        <div className="w-full bg-white border border-stone-200 p-8 rounded-3xl shadow-sm">
+        <div className="w-full max-w-md bg-white/90 backdrop-blur-sm border border-[#E5E0D5] p-6 sm:p-8 rounded-3xl shadow-lg">
           <div className="flex items-center gap-2 mb-4">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#3C6E7A]" />
-            <span className="text-xs font-semibold tracking-widest text-stone-400 uppercase">Choose your path</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#2E5E4E]" />
+            <span className="text-xs font-semibold tracking-widest text-[#8A8478] uppercase">Choose your path</span>
           </div>
 
-          <h1 className="text-4xl font-serif text-stone-900 mb-3 leading-tight">How will you rise?</h1>
-          <p className="text-stone-500 mb-8">You can change this later in settings.</p>
+          <h1 className="text-3xl sm:text-4xl font-serif text-[#1E2A32] mb-3 leading-tight">How will you rise?</h1>
+          <p className="text-[#5A6B7A] mb-8">You can change this later in settings.</p>
 
           <div className="grid grid-cols-2 gap-4 mb-7">
-            <button onClick={() => setMode("habit")} className={`p-6 rounded-2xl border-2 text-left transition-all ${mode === "habit" ? "border-[#3C6E7A] bg-[#3C6E7A]/10" : "border-stone-200 bg-stone-50 hover:border-stone-300"}`}>
-              <Sprout className={mode === "habit" ? "text-[#3C6E7A]" : "text-stone-400"} size={24} />
-              <h3 className="font-semibold text-stone-800 mt-3">Habit Tracker</h3>
-              <p className="text-sm text-stone-500">Track any habit or goal</p>
+            <button
+              onClick={() => setMode("habit")}
+              className={`p-5 sm:p-6 rounded-2xl border-2 text-left transition-all ${
+                mode === "habit" ? "border-[#2E5E4E] bg-[#2E5E4E]/10" : "border-[#E5E0D5] bg-[#FAFAF8] hover:border-[#D6D0C0]"
+              }`}
+            >
+              <Sprout className={mode === "habit" ? "text-[#2E5E4E]" : "text-[#A8A099]"} size={24} />
+              <h3 className="font-semibold text-[#1E2A32] mt-3">Habit Tracker</h3>
+              <p className="text-sm text-[#5A6B7A]">Track any habit or goal</p>
             </button>
 
-            <button onClick={() => setMode("tazkiya")} className={`p-6 rounded-2xl border-2 text-left transition-all ${mode === "tazkiya" ? "border-[#3C6E7A] bg-[#3C6E7A]/10" : "border-stone-200 bg-stone-50 hover:border-stone-300"}`}>
-              <Moon className={mode === "tazkiya" ? "text-[#3C6E7A]" : "text-stone-400"} size={24} />
-              <h3 className="font-semibold text-stone-800 mt-3">Tazkiya</h3>
-              <p className="text-sm text-stone-500">Islamic self-accountability</p>
+            <button
+              onClick={() => setMode("tazkiya")}
+              className={`p-5 sm:p-6 rounded-2xl border-2 text-left transition-all ${
+                mode === "tazkiya" ? "border-[#E8B84B] bg-[#E8B84B]/10" : "border-[#E5E0D5] bg-[#FAFAF8] hover:border-[#D6D0C0]"
+              }`}
+            >
+              <Moon className={mode === "tazkiya" ? "text-[#C99A2E]" : "text-[#A8A099]"} size={24} />
+              <h3 className="font-semibold text-[#1E2A32] mt-3">Tazkiya</h3>
+              <p className="text-sm text-[#5A6B7A]">Islamic self-accountability</p>
             </button>
           </div>
 
-          <button onClick={handleContinue} className="bg-[#3C6E7A] hover:bg-[#2C5560] text-white px-4 py-3 rounded-full w-full font-semibold transition-colors">
+          <button onClick={handleContinue} className="bg-[#2E5E4E] hover:bg-[#254D40] text-white px-4 py-3 rounded-full w-full font-semibold transition-colors">
             Continue
           </button>
         </div>

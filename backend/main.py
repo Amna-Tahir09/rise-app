@@ -12,6 +12,7 @@ import os
 from backend.db import SessionLocal
 from backend.models import User, OnboardingAnswer, HabitLog, MuhasabaLog
 from backend.rag_pipeline import answer_question
+from backend.pinecone_store import store_log
 
 app = FastAPI()
 
@@ -160,6 +161,9 @@ def save_onboarding(
             question=a.question,
             answer=a.answer
         ))
+        text_to_embed = f"{a.question}: {a.answer}"
+        store_log(user_id=data.user_id, mode=data.mode, text=text_to_embed, log_type="onboarding")
+
     db.commit()
     return {"user_id": data.user_id, "saved_count": len(data.answers)}
 
@@ -172,7 +176,7 @@ class HabitIn(BaseModel):
 
 class HabitLogRequest(BaseModel):
     user_id: int
-    date: str  # format: "YYYY-MM-DD"
+    date: str
     habits: list[HabitIn]
 
 @app.post("/habit-log", status_code=201)
@@ -193,6 +197,10 @@ def save_habit_log(
             done=h.done,
             note=h.note
         ))
+        status_text = "done" if h.done else "not done"
+        text_to_embed = f"On {data.date}, habit '{cleaned_name}' was {status_text}. Note: {h.note}"
+        store_log(user_id=data.user_id, mode=current_user.mode, text=text_to_embed, log_type="habit_log")
+
     db.commit()
     return {"user_id": data.user_id, "date": data.date, "saved_count": len(data.habits)}
 
@@ -219,6 +227,10 @@ def save_muhasaba_log(
         reflection_text=data.reflection_text,
         nafs_ratings=data.nafs_ratings
     ))
+
+    text_to_embed = f"On {data.date}, reflection: {data.reflection_text}. Nafs ratings: {data.nafs_ratings}"
+    store_log(user_id=data.user_id, mode=current_user.mode, text=text_to_embed, log_type="muhasaba_log")
+
     db.commit()
     return {"user_id": data.user_id, "date": data.date, "status": "saved"}
 
