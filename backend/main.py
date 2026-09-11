@@ -210,7 +210,7 @@ class MuhasabaRequest(BaseModel):
     user_id: int
     date: str
     reflection_text: str
-    nafs_ratings: dict[str, int]
+    nafs_ratings: dict[str, int] = {}
 
 @app.post("/muhasaba-log", status_code=201)
 def save_muhasaba_log(

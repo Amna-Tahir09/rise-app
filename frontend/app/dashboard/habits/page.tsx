@@ -49,15 +49,26 @@ export default function HabitsPage() {
     }
     saveHabits(updated);
     closeForm();
-    // CONFIRM: does /habit-log also handle creating the habit definition, or is there a
-    // separate route (e.g. POST /habits) for that? Sending as a "not logged yet" entry for now.
-        try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/habit-log`, {
+
+    // Backend contract (FastAPI HabitLogRequest):
+    // { user_id: int, date: str, habits: [{ habit_name: str, done: bool, note: str }] }
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/habit-log`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ user_id: getUserId(), habit_name: name, date: todayKey(), logged: false, note }),
+        body: JSON.stringify({
+          user_id: getUserId(),
+          date: todayKey(),
+          habits: [{ habit_name: name, done: false, note }],
+        }),
       });
-    } catch (err) { console.error("Failed to sync habit to server:", err); }
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        console.error("Habit-log sync failed:", res.status, errBody);
+      }
+    } catch (err) {
+      console.error("Failed to sync habit to server:", err);
+    }
   };
 
   const handleEdit = (habit: Habit) => {
@@ -75,13 +86,27 @@ export default function HabitsPage() {
     const updated = isDone ? todayLog.filter((id) => id !== habitId) : [...todayLog, habitId];
     setTodayLog(updated);
     localStorage.setItem(`rise_habit_log_${todayKey()}`, JSON.stringify(updated));
- try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/habit-log`, {
+
+    // Backend contract (FastAPI HabitLogRequest):
+    // { user_id: int, date: str, habits: [{ habit_name: str, done: bool, note: str }] }
+    // Note: backend has no concept of habit_id — only habit_name — so it's not sent.
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/habit-log`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ user_id: getUserId(), habit_id: habitId, habit_name: habitName, date: todayKey(), logged: !isDone }),
+        body: JSON.stringify({
+          user_id: getUserId(),
+          date: todayKey(),
+          habits: [{ habit_name: habitName, done: !isDone, note: "" }],
+        }),
       });
-    } catch (err) { console.error("Failed to sync habit-log to server:", err); }
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        console.error("Habit-log sync failed:", res.status, errBody);
+      }
+    } catch (err) {
+      console.error("Failed to sync habit-log to server:", err);
+    }
   };
 
   const doneCount = habits.filter((h) => todayLog.includes(h.id)).length;

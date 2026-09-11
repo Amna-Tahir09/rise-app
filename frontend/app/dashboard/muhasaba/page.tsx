@@ -2,24 +2,75 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Moon } from "lucide-react";
+import { ArrowLeft, Moon, Lightbulb } from "lucide-react";
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const getUserId = () => localStorage.getItem("rise_user_id") || "";
 const getToken = () => localStorage.getItem("rise_access_token") || "";
 
 const QUESTIONS = [
-  { key: "mistakes", label: "What mistakes did I make today?", placeholder: "Be honest — this is only for you." },
-  { key: "lost_control", label: "Where did I lose emotional control?", placeholder: "Anger, impatience, harsh words..." },
-  { key: "triggers", label: "What triggered those reactions?", placeholder: "A person, a moment, a thought..." },
-  { key: "sincere_action", label: "What was my most sincere action today?", placeholder: "Something done purely for Allah, with no one watching." },
-  { key: "tawbah", label: "What am I turning back from tonight?", placeholder: "One honest resolve for tomorrow." },
+  {
+    key: "mistakes",
+    label: "What mistakes did I make today?",
+    placeholder: "Be honest — this is only for you.",
+    options: [
+      "I snapped at someone over something small",
+      "I put off something important again",
+      "I said something I didn't fully mean",
+      "I wasted a lot of time without noticing",
+    ],
+  },
+  {
+    key: "lost_control",
+    label: "Where did I lose emotional control?",
+    placeholder: "Anger, impatience, harsh words...",
+    options: [
+      "I got impatient with my family",
+      "I raised my voice when I didn't need to",
+      "I let a small annoyance ruin my mood for hours",
+      "I didn't lose control today, but I felt close to it",
+    ],
+  },
+  {
+    key: "triggers",
+    label: "What triggered those reactions?",
+    placeholder: "A person, a moment, a thought...",
+    options: [
+      "Being tired or running on little sleep",
+      "A comment from someone close to me",
+      "Comparing myself to someone else",
+      "Feeling like I wasn't being heard",
+    ],
+  },
+  {
+    key: "sincere_action",
+    label: "What was my most sincere action today?",
+    placeholder: "Something done purely for Allah, with no one watching.",
+    options: [
+      "A prayer I made sure to focus in, even when rushed",
+      "Helping someone without mentioning it to anyone",
+      "Holding back a harsh reply I wanted to give",
+      "Honestly, I'm not sure anything today was fully sincere",
+    ],
+  },
+  {
+    key: "tawbah",
+    label: "What am I turning back from tonight?",
+    placeholder: "One honest resolve for tomorrow.",
+    options: [
+      "Being short-tempered with the people I love most",
+      "Delaying things I know I should just do",
+      "Letting my phone take time I meant to spend better",
+      "Judging myself more harshly than I judge others",
+    ],
+  },
 ];
 
 export default function MuhasabaPage() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [openHint, setOpenHint] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -31,6 +82,15 @@ export default function MuhasabaPage() {
 
   const handleChange = (key: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const toggleHint = (index: number) => {
+    setOpenHint(openHint === index ? null : index);
+  };
+
+  const selectOption = (key: string, index: number, option: string) => {
+    handleChange(key, option);
+    setOpenHint(null);
   };
 
   const handleSave = async () => {
@@ -83,9 +143,42 @@ export default function MuhasabaPage() {
         <p className="text-sm text-[#5A6B7A] mb-1">{new Date().toDateString()}</p>
         <p className="text-sm text-[#5A6B7A] mb-6">{answeredCount} of {QUESTIONS.length} answered</p>
 
-        {QUESTIONS.map((q) => (
+        {QUESTIONS.map((q, index) => (
           <div key={q.key} className="mb-5">
-            <label className="block text-sm font-semibold text-[#1E2A32] mb-2">{q.label}</label>
+            <div className="flex items-center gap-1.5 mb-2">
+              <label className="text-sm font-semibold text-[#1E2A32]">{q.label}</label>
+              <button
+                type="button"
+                onClick={() => toggleHint(index)}
+                className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+                  openHint === index ? "bg-[#E8B84B] text-[#1E2A32]" : "bg-[#F4F1EA] text-[#B0AA9C] hover:bg-[#E8B84B]/30"
+                }`}
+                aria-label="Show example options"
+              >
+                <Lightbulb size={12} fill={openHint === index ? "currentColor" : "none"} />
+              </button>
+            </div>
+
+            {openHint === index && (
+              <div className="bg-[#FBF3E0] border border-[#E8B84B]/40 rounded-xl p-3 mb-2">
+                <p className="text-[11px] font-semibold text-[#8A6D2F] uppercase tracking-wide mb-2">
+                  Tap one to use it as a starting point
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  {q.options.map((option, optIndex) => (
+                    <button
+                      key={optIndex}
+                      type="button"
+                      onClick={() => selectOption(q.key, index, option)}
+                      className="text-left text-xs text-[#4A4536] bg-white/70 hover:bg-white border border-[#E8B84B]/30 hover:border-[#E8B84B] rounded-lg px-3 py-2 transition-colors"
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <textarea
               value={answers[q.key] || ""}
               onChange={(e) => handleChange(q.key, e.target.value)}
