@@ -28,19 +28,25 @@ export default function TawbahPage() {
     const payload = { date: todayKey(), regret, intention };
     localStorage.setItem("rise_last_tawbah", JSON.stringify(payload));
 
-    // CONFIRM: is tawbah stored via the same /muhasaba-log endpoint (as part of
-    // reflection_text or a dedicated field), or does it need its own route?
+    // Backend contract (shared /muhasaba-log, log_type="tawbah"):
+    // { user_id, date, log_type: "tawbah", reflection_text }
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/muhasaba-log`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/muhasaba-log`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({
           user_id: getUserId(),
           date: todayKey(),
+          log_type: "tawbah",
           reflection_text: JSON.stringify({ tawbah_regret: regret, tawbah_intention: intention }),
         }),
       });
-      setSaved(true);
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        console.error("Tawbah sync failed:", res.status, errBody);
+      } else {
+        setSaved(true);
+      }
     } catch (err) {
       console.error("Failed to sync tawbah to server:", err);
     } finally {

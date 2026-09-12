@@ -8,6 +8,7 @@ from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, date
 import os
+import secrets
 
 from backend.db import SessionLocal
 from backend.models import User, OnboardingAnswer, HabitLog, MuhasabaLog
@@ -22,6 +23,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "https://rise-app-six.vercel.app",
+        "https://rise-app-nu.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -109,6 +111,66 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
 
     token = create_access_token(user.id)
     return {"access_token": token, "user_id": user.id, "name": user.user_name, "email": user.email}
+
+
+# ---------- Guest Signup (no token needed — creates a throwaway account) ----------
+@app.post("/guest-signup", status_code=201)
+def guest_signup(db: Session = Depends(get_db)):
+    """
+    Creates a throwaway account behind the scenes so guests get a real
+    user_id + JWT and can use every existing route (chat, habit-log,
+    muhasaba-log, etc.) exactly like a signed-up user, with zero backend
+    changes needed anywhere else.
+    """
+    guest_id = secrets.token_hex(8)
+    guest_email = f"guest_{guest_id}@rise.local"
+    guest_password = secrets.token_urlsafe(16)  # random, unusable, unknown to anyone
+
+    hashed_pw = pwd_context.hash(guest_password)
+    user = User(
+        user_name="Guest",
+        email=guest_email,
+        password_hash=hashed_pw,
+        is_guest=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    token = create_access_token(user.id)
+    return {"access_token": token, "user_id": user.id, "name": user.user_name, "is_guest": True}
+
+
+# ---------- Claim Account (protected — upgrades a guest to a real account) ----------
+class ClaimAccountRequest(BaseModel):
+    user_id: int
+    name: str
+    email: str
+    password: str
+
+@app.post("/claim-account")
+def claim_account(
+    data: ClaimAccountRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.id != data.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized for this user")
+    if not current_user.is_guest:
+        raise HTTPException(status_code=400, detail="This account is not a guest account")
+
+    existing = db.query(User).filter(User.email == data.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    current_user.user_name = data.name
+    current_user.email = data.email
+    current_user.password_hash = pwd_context.hash(data.password)
+    current_user.is_guest = False
+    db.commit()
+
+    token = create_access_token(current_user.id)
+    return {"access_token": token, "user_id": current_user.id, "name": current_user.user_name, "email": current_user.email}
 
 
 # ---------- Set Mode (protected) ----------
@@ -205,12 +267,15 @@ def save_habit_log(
     return {"user_id": data.user_id, "date": data.date, "saved_count": len(data.habits)}
 
 
-# ---------- Muhasaba Log (protected) ----------
+# ---------- Reflection Log: Muhasaba / Nafs Tracker / Tawbah (protected) ----------
 class MuhasabaRequest(BaseModel):
     user_id: int
     date: str
-    reflection_text: str
+    log_type: str = "muhasaba"   # "muhasaba" | "nafs_check" | "tawbah"
+    reflection_text: str = ""
     nafs_ratings: dict[str, int] = {}
+
+VALID_LOG_TYPES = ("muhasaba", "nafs_check", "tawbah")
 
 @app.post("/muhasaba-log", status_code=201)
 def save_muhasaba_log(
@@ -221,18 +286,22 @@ def save_muhasaba_log(
     if current_user.id != data.user_id:
         raise HTTPException(status_code=403, detail="Not authorized for this user")
 
+    if data.log_type not in VALID_LOG_TYPES:
+        raise HTTPException(status_code=422, detail=f"Invalid log_type. Must be one of {VALID_LOG_TYPES}")
+
     db.add(MuhasabaLog(
         user_id=data.user_id,
         date=data.date,
+        log_type=data.log_type,
         reflection_text=data.reflection_text,
         nafs_ratings=data.nafs_ratings
     ))
 
-    text_to_embed = f"On {data.date}, reflection: {data.reflection_text}. Nafs ratings: {data.nafs_ratings}"
-    store_log(user_id=data.user_id, mode=current_user.mode, text=text_to_embed, log_type="muhasaba_log")
+    text_to_embed = f"[{data.log_type}] On {data.date}, reflection: {data.reflection_text}. Nafs ratings: {data.nafs_ratings}"
+    store_log(user_id=data.user_id, mode=current_user.mode, text=text_to_embed, log_type=data.log_type)
 
     db.commit()
-    return {"user_id": data.user_id, "date": data.date, "status": "saved"}
+    return {"user_id": data.user_id, "date": data.date, "log_type": data.log_type, "status": "saved"}
 
 
 # ---------- Chat (protected) ----------
@@ -256,10 +325,12 @@ def chat(
             question=data.question
         )
         return {"answer": answer, "sources_used": 1}
-    except Exception:
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
-            detail="Could not generate an answer. Please try again."
+            detail=f"Could not generate an answer. Please try again. ({str(e)})"
         )
 
 

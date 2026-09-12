@@ -10,6 +10,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [guestLoading, setGuestLoading] = useState(false);
   const router = useRouter();
 
   const handleSignup = async () => {
@@ -65,9 +66,35 @@ export default function SignupPage() {
     }
   };
 
-  const handleGuest = () => {
-    localStorage.setItem("rise_guest", "true");
-    router.replace("/mode");
+  const handleGuest = async () => {
+    setError("");
+    setGuestLoading(true);
+    try {
+      // Backend contract: POST /guest-signup (no body needed) returns
+      // { access_token, user_id, name, is_guest: true } — same shape as
+      // a normal login, so a guest gets a real token and can use every
+      // protected route (chat, habit-log, muhasaba-log, etc.) immediately.
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/guest-signup`, {
+        method: "POST",
+        headers: { "ngrok-skip-browser-warning": "true" },
+      });
+      if (!res.ok) {
+        setError("Could not start a guest session. Please try again.");
+        return;
+      }
+      const data = await res.json();
+      localStorage.setItem("rise_access_token", data.access_token ?? "");
+      localStorage.setItem("rise_user_id", (data.user_id ?? "").toString());
+      localStorage.setItem("rise_username", data.name ?? "Guest");
+      localStorage.setItem("rise_guest", "true");
+
+      router.replace("/mode");
+    } catch (err) {
+      console.error("Guest signup failed:", err);
+      setError("Could not reach the server. Please try again.");
+    } finally {
+      setGuestLoading(false);
+    }
   };
 
   return (
@@ -138,7 +165,9 @@ export default function SignupPage() {
             Already have an account? <a href="/login" className="font-semibold text-[#4B6E6D]">Sign in</a>
           </p>
           <p className="text-center text-sm mt-3">
-            <button onClick={handleGuest} className="font-medium underline text-[#4B6E6D]/70">Continue as guest</button>
+            <button onClick={handleGuest} disabled={guestLoading} className="font-medium underline text-[#4B6E6D]/70 disabled:opacity-60">
+              {guestLoading ? "Setting up..." : "Continue as guest"}
+            </button>
           </p>
         </div>
       </div>

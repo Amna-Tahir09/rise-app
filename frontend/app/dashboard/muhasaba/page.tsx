@@ -99,16 +99,25 @@ export default function MuhasabaPage() {
     localStorage.setItem("rise_last_muhasaba", JSON.stringify(payload));
     localStorage.setItem(`rise_muhasaba_log_${todayKey()}`, "true");
 
-    // CONFIRM: exact field names for /muhasaba-log. Assuming it takes the 7-nafs-style
-    // "answers" as a single JSON object keyed by question, matching the API contract
-    // Rimsha mentioned (nafs_ratings stored as one JSON object). Adjust keys/shape once confirmed.
+    // Backend contract (shared /muhasaba-log, log_type="muhasaba"):
+    // { user_id, date, log_type: "muhasaba", reflection_text }
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/muhasaba-log`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/muhasaba-log`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ user_id: getUserId(), date: todayKey(), reflection_text: JSON.stringify(answers) }),
+        body: JSON.stringify({
+          user_id: getUserId(),
+          date: todayKey(),
+          log_type: "muhasaba",
+          reflection_text: JSON.stringify(answers),
+        }),
       });
-      setSaved(true);
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        console.error("Muhasaba sync failed:", res.status, errBody);
+      } else {
+        setSaved(true);
+      }
     } catch (err) {
       console.error("Failed to sync muhasaba to server:", err);
     } finally {
