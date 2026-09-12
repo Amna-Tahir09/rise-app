@@ -13,6 +13,15 @@ export default function SignupPage() {
   const [guestLoading, setGuestLoading] = useState(false);
   const router = useRouter();
 
+  const clearStaleLocalData = () => {
+    // Removes any leftover data from a previous account/session on this
+    // browser (habits, chat history, muhasaba/nafs/tawbah, etc.) so a new
+    // signup or guest session never inherits someone else's data.
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith("rise_"))
+      .forEach((key) => localStorage.removeItem(key));
+  };
+
   const handleSignup = async () => {
     if (!name || !email || !password || !confirmPassword) {
       setError("Please fill in all fields.");
@@ -27,6 +36,9 @@ export default function SignupPage() {
       return;
     }
     setError("");
+
+    clearStaleLocalData();
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/signup`, {
         method: "POST",
@@ -69,6 +81,9 @@ export default function SignupPage() {
   const handleGuest = async () => {
     setError("");
     setGuestLoading(true);
+
+    clearStaleLocalData();
+
     try {
       // Backend contract: POST /guest-signup (no body needed) returns
       // { access_token, user_id, name, is_guest: true } — same shape as

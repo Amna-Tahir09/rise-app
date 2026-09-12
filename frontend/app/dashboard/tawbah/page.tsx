@@ -2,17 +2,32 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Shield } from "lucide-react";
+import { ArrowLeft, Shield, Lightbulb } from "lucide-react";
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const getUserId = () => localStorage.getItem("rise_user_id") || "";
 const getToken = () => localStorage.getItem("rise_access_token") || "";
+
+const REGRET_OPTIONS = [
+  "I was short-tempered with someone I love",
+  "I let my tongue say something I shouldn't have",
+  "I delayed a prayer without a real reason",
+  "I let jealousy or comparison get to me today",
+];
+
+const INTENTION_OPTIONS = [
+  "Pause and breathe before reacting in anger",
+  "Speak more gently, even when I'm frustrated",
+  "Protect my prayer times no matter how busy I am",
+  "Catch myself before comparing my life to others",
+];
 
 export default function TawbahPage() {
   const [regret, setRegret] = useState("");
   const [intention, setIntention] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [openHint, setOpenHint] = useState<"regret" | "intention" | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -22,6 +37,20 @@ export default function TawbahPage() {
       setIntention(last.intention || "");
     }
   }, []);
+
+  const toggleHint = (field: "regret" | "intention") => {
+    setOpenHint(openHint === field ? null : field);
+  };
+
+  const selectRegretOption = (option: string) => {
+    setRegret(option);
+    setOpenHint(null);
+  };
+
+  const selectIntentionOption = (option: string) => {
+    setIntention(option);
+    setOpenHint(null);
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -86,7 +115,40 @@ export default function TawbahPage() {
           </p>
         </div>
 
-        <label className="block text-sm font-semibold text-[#1E2A32] mb-2">What do you regret today?</label>
+        <div className="flex items-center gap-1.5 mb-2">
+          <label className="text-sm font-semibold text-[#1E2A32]">What do you regret today?</label>
+          <button
+            type="button"
+            onClick={() => toggleHint("regret")}
+            className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+              openHint === "regret" ? "bg-[#E0674F] text-white" : "bg-[#F4F1EA] text-[#B0AA9C] hover:bg-[#E0674F]/30"
+            }`}
+            aria-label="Show example options"
+          >
+            <Lightbulb size={12} fill={openHint === "regret" ? "currentColor" : "none"} />
+          </button>
+        </div>
+
+        {openHint === "regret" && (
+          <div className="bg-[#FBEAE4] border border-[#E0674F]/30 rounded-xl p-3 mb-2">
+            <p className="text-[11px] font-semibold text-[#A14C36] uppercase tracking-wide mb-2">
+              Tap one to use it as a starting point
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {REGRET_OPTIONS.map((option, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => selectRegretOption(option)}
+                  className="text-left text-xs text-[#4A3530] bg-white/70 hover:bg-white border border-[#E0674F]/25 hover:border-[#E0674F] rounded-lg px-3 py-2 transition-colors"
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <textarea
           value={regret}
           onChange={(e) => setRegret(e.target.value)}
@@ -95,7 +157,40 @@ export default function TawbahPage() {
           className="w-full bg-[#F4F1EA] border border-[#E5E0D5] p-3.5 rounded-2xl text-sm mb-5 focus:outline-none focus:border-[#2E5E4E] placeholder:text-[#B0AA9C]"
         />
 
-        <label className="block text-sm font-semibold text-[#1E2A32] mb-2">What is your firm intention going forward?</label>
+        <div className="flex items-center gap-1.5 mb-2">
+          <label className="text-sm font-semibold text-[#1E2A32]">What is your firm intention going forward?</label>
+          <button
+            type="button"
+            onClick={() => toggleHint("intention")}
+            className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+              openHint === "intention" ? "bg-[#E0674F] text-white" : "bg-[#F4F1EA] text-[#B0AA9C] hover:bg-[#E0674F]/30"
+            }`}
+            aria-label="Show example options"
+          >
+            <Lightbulb size={12} fill={openHint === "intention" ? "currentColor" : "none"} />
+          </button>
+        </div>
+
+        {openHint === "intention" && (
+          <div className="bg-[#FBEAE4] border border-[#E0674F]/30 rounded-xl p-3 mb-2">
+            <p className="text-[11px] font-semibold text-[#A14C36] uppercase tracking-wide mb-2">
+              Tap one to use it as a starting point
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {INTENTION_OPTIONS.map((option, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => selectIntentionOption(option)}
+                  className="text-left text-xs text-[#4A3530] bg-white/70 hover:bg-white border border-[#E0674F]/25 hover:border-[#E0674F] rounded-lg px-3 py-2 transition-colors"
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <textarea
           value={intention}
           onChange={(e) => setIntention(e.target.value)}
