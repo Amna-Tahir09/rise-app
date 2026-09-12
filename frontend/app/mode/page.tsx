@@ -14,9 +14,6 @@ export default function ModePage() {
     const userId = localStorage.getItem("rise_user_id") || "";
     const token = localStorage.getItem("rise_access_token") || "";
 
-    // Sync the chosen mode to the backend so current_user.mode is actually
-    // set in the database — without this, /chat breaks entirely since it
-    // filters by mode and null is not a valid filter value.
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/set-mode`, {
         method: "POST",
@@ -26,7 +23,11 @@ export default function ModePage() {
     } catch (err) {
       console.error("Failed to sync mode to server:", err);
     } finally {
-      router.replace("/onboarding");
+      // Only send them through onboarding the FIRST time they pick this
+      // specific mode. If they've already completed onboarding for it
+      // before (habit or tazkiya), skip straight to the dashboard.
+      const alreadyOnboarded = localStorage.getItem(`rise_onboarding_done_${mode}`) === "true";
+      router.replace(alreadyOnboarded ? "/dashboard" : "/onboarding");
     }
   };
 

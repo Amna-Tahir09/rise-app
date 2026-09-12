@@ -108,8 +108,6 @@ export default function OnboardingPage() {
     localStorage.setItem("rise_onboarding", JSON.stringify(payload));
     setSubmitting(true);
 
-    // CONFIRM: exact field names expected by POST /onboarding — assuming
-    // { user_id, mode, answers: [{question, answer}] } with Bearer auth.
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/onboarding`, {
         method: "POST",
@@ -119,9 +117,11 @@ export default function OnboardingPage() {
         body: JSON.stringify({ user_id: getUserId(), mode, answers: payload }),
       });
     } catch (err) {
-      // Non-blocking: local copy is already saved even if the server call fails.
       console.error("Failed to sync onboarding to server:", err);
     } finally {
+      // Mark this specific mode as onboarded so the mode-switch flow
+      // (mode/page.tsx) skips onboarding next time this mode is picked.
+      localStorage.setItem(`rise_onboarding_done_${mode}`, "true");
       setSubmitting(false);
       router.replace("/dashboard");
     }
