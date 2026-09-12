@@ -13,7 +13,17 @@ type DashboardData = {
 
 const DAY_LABELS = ["6d", "5d", "4d", "3d", "2d", "Yest", "Today"];
 
-export default function HabitDashboard({ data, greetingName, today }: { data: DashboardData; greetingName: string; today: string }) {
+export default function HabitDashboard({
+  data,
+  greetingName,
+  today,
+  onToggleHabit,
+}: {
+  data: DashboardData;
+  greetingName: string;
+  today: string;
+  onToggleHabit?: (habitId: string, habitName: string) => void;
+}) {
   const habits = data.habits ?? [];
   const todayLog = data.today_log ?? [];
   const pending = Math.max(habits.length - todayLog.length, 0);
@@ -121,12 +131,22 @@ export default function HabitDashboard({ data, greetingName, today }: { data: Da
               <Link href="/dashboard/habits" className="text-sm font-semibold text-[#2E5E4E]">Add your first habit</Link>
             </div>
           ) : (
-            habits.map((h) => (
-              <div key={h.id} className={`flex items-center gap-3 p-3 rounded-xl border mb-2 ${todayLog.includes(h.id) ? "border-[#2E5E4E] bg-[#2E5E4E]/5" : "border-[#E5E0D5]"}`}>
-                <div className={`w-4.5 h-4.5 rounded-md border-2 ${todayLog.includes(h.id) ? "bg-[#2E5E4E] border-[#2E5E4E]" : "border-[#C9C4B8]"}`} />
-                <span className="text-sm text-[#1E2A32]">{h.name}</span>
-              </div>
-            ))
+            habits.map((h) => {
+              const isDone = todayLog.includes(h.id);
+              return (
+                <button
+                  key={h.id}
+                  type="button"
+                  onClick={() => onToggleHabit?.(h.id, h.name)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border mb-2 text-left transition-colors ${
+                    isDone ? "border-[#2E5E4E] bg-[#2E5E4E]/5" : "border-[#E5E0D5] hover:border-[#2E5E4E]/40"
+                  }`}
+                >
+                  <div className={`w-4.5 h-4.5 rounded-md border-2 flex-shrink-0 ${isDone ? "bg-[#2E5E4E] border-[#2E5E4E]" : "border-[#C9C4B8]"}`} />
+                  <span className="text-sm text-[#1E2A32]">{h.name}</span>
+                </button>
+              );
+            })
           )}
         </div>
       </div>
