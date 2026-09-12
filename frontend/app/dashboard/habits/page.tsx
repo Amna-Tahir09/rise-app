@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Pencil, Trash2, X, SquareCheck } from "lucide-react";
+import { useSignupGate } from "../_components/SignupGate";
 
 type Habit = { id: string; name: string; time?: string; note?: string };
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
-// CONFIRM: user_id source — localStorage("rise_user_id") set at login/signup, or decoded from JWT?
 const getUserId = () => localStorage.getItem("rise_user_id") || "";
 const getToken = () => localStorage.getItem("rise_access_token") || "";
 
@@ -20,6 +20,7 @@ export default function HabitsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const router = useRouter();
+  const { requireAccount, GateModal } = useSignupGate();
 
   useEffect(() => {
     const savedHabits = JSON.parse(localStorage.getItem("rise_habits_list") || "[]");
@@ -40,6 +41,8 @@ export default function HabitsPage() {
 
   const handleSave = async () => {
     if (!name.trim()) return;
+    if (requireAccount()) return; // guests get the signup prompt instead of a real save
+
     let updated: Habit[];
     if (editingId) {
       updated = habits.map((h) => (h.id === editingId ? { ...h, name, time, note } : h));
@@ -50,8 +53,6 @@ export default function HabitsPage() {
     saveHabits(updated);
     closeForm();
 
-    // Backend contract (FastAPI HabitLogRequest):
-    // { user_id: int, date: str, habits: [{ habit_name: str, done: bool, note: str }] }
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/habit-log`, {
         method: "POST",
@@ -82,14 +83,13 @@ export default function HabitsPage() {
   };
 
   const toggleDone = async (habitId: string, habitName: string) => {
+    if (requireAccount()) return; // guests get the signup prompt instead of a real save
+
     const isDone = todayLog.includes(habitId);
     const updated = isDone ? todayLog.filter((id) => id !== habitId) : [...todayLog, habitId];
     setTodayLog(updated);
     localStorage.setItem(`rise_habit_log_${todayKey()}`, JSON.stringify(updated));
 
-    // Backend contract (FastAPI HabitLogRequest):
-    // { user_id: int, date: str, habits: [{ habit_name: str, done: bool, note: str }] }
-    // Note: backend has no concept of habit_id — only habit_name — so it's not sent.
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/habit-log`, {
         method: "POST",
@@ -190,6 +190,7 @@ export default function HabitsPage() {
         })
       )}
       </div>
+      <GateModal />
     </div>
   );
 }

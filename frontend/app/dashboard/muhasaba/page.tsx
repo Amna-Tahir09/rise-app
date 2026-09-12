@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Moon, Lightbulb } from "lucide-react";
+import { useSignupGate } from "../_components/SignupGate";
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const getUserId = () => localStorage.getItem("rise_user_id") || "";
@@ -72,6 +73,7 @@ export default function MuhasabaPage() {
   const [saved, setSaved] = useState(false);
   const [openHint, setOpenHint] = useState<number | null>(null);
   const router = useRouter();
+  const { requireAccount, GateModal } = useSignupGate();
 
   useEffect(() => {
     const last = JSON.parse(localStorage.getItem("rise_last_muhasaba") || "{}");
@@ -94,13 +96,13 @@ export default function MuhasabaPage() {
   };
 
   const handleSave = async () => {
+    if (requireAccount()) return; // guests get the signup prompt instead of a real save
+
     setSaving(true);
     const payload = { date: todayKey(), answers };
     localStorage.setItem("rise_last_muhasaba", JSON.stringify(payload));
     localStorage.setItem(`rise_muhasaba_log_${todayKey()}`, "true");
 
-    // Backend contract (shared /muhasaba-log, log_type="muhasaba"):
-    // { user_id, date, log_type: "muhasaba", reflection_text }
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/muhasaba-log`, {
         method: "POST",
@@ -210,6 +212,7 @@ export default function MuhasabaPage() {
         </p>
       </div>
       </div>
+      <GateModal />
     </div>
   );
 }

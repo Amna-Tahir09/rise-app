@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Shield, Lightbulb } from "lucide-react";
+import { useSignupGate } from "../_components/SignupGate";
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const getUserId = () => localStorage.getItem("rise_user_id") || "";
@@ -29,6 +30,7 @@ export default function TawbahPage() {
   const [saved, setSaved] = useState(false);
   const [openHint, setOpenHint] = useState<"regret" | "intention" | null>(null);
   const router = useRouter();
+  const { requireAccount, GateModal } = useSignupGate();
 
   useEffect(() => {
     const last = JSON.parse(localStorage.getItem("rise_last_tawbah") || "{}");
@@ -53,12 +55,12 @@ export default function TawbahPage() {
   };
 
   const handleSave = async () => {
+    if (requireAccount()) return; // guests get the signup prompt instead of a real save
+
     setSaving(true);
     const payload = { date: todayKey(), regret, intention };
     localStorage.setItem("rise_last_tawbah", JSON.stringify(payload));
 
-    // Backend contract (shared /muhasaba-log, log_type="tawbah"):
-    // { user_id, date, log_type: "tawbah", reflection_text }
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/muhasaba-log`, {
         method: "POST",
@@ -211,6 +213,7 @@ export default function TawbahPage() {
         </p>
       </div>
       </div>
+      <GateModal />
     </div>
   );
 }

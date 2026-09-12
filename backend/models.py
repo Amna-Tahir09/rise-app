@@ -11,7 +11,6 @@ class User(Base):
     user_name = Column(String)
     password_hash = Column(String)
     mode = Column(String, nullable=True)  # "habit_tracker" or "tazkiya"
-    is_guest = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

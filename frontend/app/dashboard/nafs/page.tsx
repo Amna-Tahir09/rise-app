@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Activity } from "lucide-react";
+import { useSignupGate } from "../_components/SignupGate";
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const getUserId = () => localStorage.getItem("rise_user_id") || "";
@@ -26,6 +27,7 @@ export default function NafsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const router = useRouter();
+  const { requireAccount, GateModal } = useSignupGate();
 
   useEffect(() => {
     const last = JSON.parse(localStorage.getItem("rise_last_nafs_check") || "{}");
@@ -39,12 +41,12 @@ export default function NafsPage() {
   };
 
   const handleSave = async () => {
+    if (requireAccount()) return; // guests get the signup prompt instead of a real save
+
     setSaving(true);
     const payload = { date: todayKey(), ratings };
     localStorage.setItem("rise_last_nafs_check", JSON.stringify(payload));
 
-    // Backend contract (shared /muhasaba-log, log_type="nafs_check"):
-    // { user_id, date, log_type: "nafs_check", nafs_ratings }
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/muhasaba-log`, {
         method: "POST",
@@ -135,6 +137,7 @@ export default function NafsPage() {
         </button>
       </div>
       </div>
+      <GateModal />
     </div>
   );
 }

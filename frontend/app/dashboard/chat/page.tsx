@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, MessageCircle, Send } from "lucide-react";
+import { useSignupGate } from "../_components/SignupGate";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -15,6 +16,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { requireAccount, GateModal } = useSignupGate();
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("rise_chat_history") || "[]");
@@ -38,6 +40,8 @@ export default function ChatPage() {
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
+    if (requireAccount()) return; // guests get the signup prompt instead of a real request
+
     const userMsg: Message = { role: "user", content: input };
     const updated = [...messages, userMsg];
     setMessages(updated);
@@ -46,8 +50,6 @@ export default function ChatPage() {
     setInput("");
     setLoading(true);
 
-    // Backend contract (FastAPI ChatRequest): { user_id: int, question: str }
-    // returns { answer: string, sources_used: int }
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
         method: "POST",
@@ -136,6 +138,7 @@ export default function ChatPage() {
         </div>
       </div>
       </div>
+      <GateModal />
     </div>
   );
 }

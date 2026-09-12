@@ -3,12 +3,11 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, func
+from sqlalchemy import or_
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, date
 import os
-import secrets
 
 from backend.db import SessionLocal
 from backend.models import User, OnboardingAnswer, HabitLog, MuhasabaLog
@@ -48,8 +47,6 @@ def create_access_token(user_id: int):
     return jwt.encode({"sub": str(user_id), "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
 
 def parse_date(date_str: str) -> date:
-    """Every page sends date as 'YYYY-MM-DD'. Centralized so every route
-    parses it the same way and errors clearly if the format is ever wrong."""
     try:
         return datetime.strptime(date_str, "%Y-%m-%d").date()
     except ValueError:
@@ -119,60 +116,6 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
 
     token = create_access_token(user.id)
     return {"access_token": token, "user_id": user.id, "name": user.user_name, "email": user.email}
-
-
-# ---------- Guest Signup ----------
-@app.post("/guest-signup", status_code=201)
-def guest_signup(db: Session = Depends(get_db)):
-    guest_id = secrets.token_hex(8)
-    guest_email = f"guest_{guest_id}@rise.local"
-    guest_password = secrets.token_urlsafe(16)
-
-    hashed_pw = pwd_context.hash(guest_password)
-    user = User(
-        user_name="Guest",
-        email=guest_email,
-        password_hash=hashed_pw,
-        is_guest=True,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    token = create_access_token(user.id)
-    return {"access_token": token, "user_id": user.id, "name": user.user_name, "is_guest": True}
-
-
-# ---------- Claim Account ----------
-class ClaimAccountRequest(BaseModel):
-    user_id: int
-    name: str
-    email: str
-    password: str
-
-@app.post("/claim-account")
-def claim_account(
-    data: ClaimAccountRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    if current_user.id != data.user_id:
-        raise HTTPException(status_code=403, detail="Not authorized for this user")
-    if not current_user.is_guest:
-        raise HTTPException(status_code=400, detail="This account is not a guest account")
-
-    existing = db.query(User).filter(User.email == data.email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    current_user.user_name = data.name
-    current_user.email = data.email
-    current_user.password_hash = pwd_context.hash(data.password)
-    current_user.is_guest = False
-    db.commit()
-
-    token = create_access_token(current_user.id)
-    return {"access_token": token, "user_id": current_user.id, "name": current_user.user_name, "email": current_user.email}
 
 
 # ---------- Set Mode ----------
@@ -257,9 +200,6 @@ def save_habit_log(
     for h in data.habits:
         cleaned_name = h.habit_name.strip().lower()
 
-        # Upsert: if this habit already has a row for this date, update it
-        # instead of inserting a duplicate — otherwise toggling a habit on/off
-        # repeatedly in one day creates multiple rows and breaks today's count.
         existing = db.query(HabitLog).filter(
             HabitLog.user_id == data.user_id,
             HabitLog.habit_name == cleaned_name,
@@ -368,7 +308,6 @@ def get_dashboard(
     today = date.today()
 
     if current_user.mode == "tazkiya":
-        # ---- Tazkiya dashboard data ----
         muhasaba_today = db.query(MuhasabaLog).filter(
             MuhasabaLog.user_id == user_id,
             MuhasabaLog.log_type == "muhasaba",
@@ -387,7 +326,6 @@ def get_dashboard(
                 muhasaba_streak += 1
                 day -= timedelta(days=1)
             elif day == today:
-                # today not done yet shouldn't zero out yesterday's streak
                 day -= timedelta(days=1)
                 continue
             else:
@@ -400,9 +338,6 @@ def get_dashboard(
             "muhasaba_streak": muhasaba_streak,
         }
 
-    # ---- Habit dashboard data ----
-    # Distinct habit names this user has ever logged — this doubles as the
-    # "habit list" since there's no separate habit-definitions table.
     habit_names = [
         row[0] for row in
         db.query(HabitLog.habit_name).filter(HabitLog.user_id == user_id).distinct().all()
