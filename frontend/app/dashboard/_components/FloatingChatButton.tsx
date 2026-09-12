@@ -47,7 +47,7 @@ export default function FloatingChatButton() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true", Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ user_id: getUserId(), message: userMsg.content }),
+        body: JSON.stringify({ user_id: getUserId(), question: userMsg.content }),
       });
       const data = await res.json();
       const reply: Message = { role: "assistant", content: data.response || data.answer || "..." };
