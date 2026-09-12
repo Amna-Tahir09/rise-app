@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock } from "lucide-react";
 
@@ -9,20 +9,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
-
-  useEffect(() => {
-    // Only auto-redirect if we have a COMPLETE, consistent session —
-    // username alone isn't enough. A leftover username with no token/user_id
-    // (from a partial clear, guest transition, etc.) should NOT bounce the
-    // user past the login form, or they end up stuck unable to actually
-    // authenticate.
-    const username = localStorage.getItem("rise_username");
-    const token = localStorage.getItem("rise_access_token");
-    const userId = localStorage.getItem("rise_user_id");
-    if (username && token && userId) {
-      router.replace("/mode");
-    }
-  }, [router]);
 
   const clearStaleLocalData = () => {
     Object.keys(localStorage)
