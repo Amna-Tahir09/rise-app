@@ -11,11 +11,24 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // Only auto-redirect if we have a COMPLETE, consistent session —
+    // username alone isn't enough. A leftover username with no token/user_id
+    // (from a partial clear, guest transition, etc.) should NOT bounce the
+    // user past the login form, or they end up stuck unable to actually
+    // authenticate.
     const username = localStorage.getItem("rise_username");
-    if (username) {
+    const token = localStorage.getItem("rise_access_token");
+    const userId = localStorage.getItem("rise_user_id");
+    if (username && token && userId) {
       router.replace("/mode");
     }
   }, [router]);
+
+  const clearStaleLocalData = () => {
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith("rise_"))
+      .forEach((key) => localStorage.removeItem(key));
+  };
 
   const handleLogin = async () => {
     if (!identifier || !password) {
@@ -23,6 +36,9 @@ export default function LoginPage() {
       return;
     }
     setError("");
+
+    clearStaleLocalData();
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/login`, {
         method: "POST",
@@ -50,9 +66,8 @@ export default function LoginPage() {
   };
 
   const handleGuest = () => {
+    clearStaleLocalData();
     localStorage.setItem("rise_guest", "true");
-    localStorage.removeItem("rise_username");
-    localStorage.removeItem("rise_identifier");
     router.replace("/mode");
   };
 
