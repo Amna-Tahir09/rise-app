@@ -10,7 +10,8 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     user_name = Column(String)
     password_hash = Column(String)
-    mode = Column(String, nullable = True)  # "habit_tracker" or "tazkiya"
+    mode = Column(String, nullable=True)  # "habit_tracker" or "tazkiya"
+    is_guest = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -40,6 +41,7 @@ class MuhasabaLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    log_type = Column(String, default="muhasaba")  # "muhasaba" | "nafs_check" | "tawbah"
     reflection_text = Column(String, nullable=True)
     nafs_ratings = Column(JSON)
     date = Column(DateTime, default=datetime.utcnow)

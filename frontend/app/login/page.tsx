@@ -91,7 +91,7 @@ export default function LoginPage() {
 
           {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">{error}</div>}
 
-          <label className="block text-sm font-semibold text-[#2C3E40] mb-2">Email or Username</label>
+          <label className="block text-sm font-semibold text-[#2C3E40] mb-2">Email</label>
           <div className="relative mb-5">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8DA0A0]" size={18} />
             <input className="bg-[#EAF0E8] border border-[#DCE4DC] pl-11 pr-4 py-3 w-full rounded-full focus:outline-none focus:border-[#4B6E6D] text-[#2C3E40]" value={identifier} onChange={(e) => setIdentifier(e.target.value)} />

@@ -24,6 +24,7 @@ const severityColor = (n: number) => (n === 0 ? "text-[#B0AA9C]" : n <= 2 ? "tex
 export default function NafsPage() {
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -42,15 +43,25 @@ export default function NafsPage() {
     const payload = { date: todayKey(), ratings };
     localStorage.setItem("rise_last_nafs_check", JSON.stringify(payload));
 
-    // CONFIRM: does nafs_ratings go to the same /muhasaba-log endpoint as a separate
-    // "nafs_ratings" JSON object field (per Rimsha's DB note: "nafs_ratings ... stored as
-    // a single JSON object with all 7 nafs diseases as keys"), or is there a dedicated route?
+    // Backend contract (shared /muhasaba-log, log_type="nafs_check"):
+    // { user_id, date, log_type: "nafs_check", nafs_ratings }
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/muhasaba-log`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/muhasaba-log`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ user_id: getUserId(), date: todayKey(), nafs_ratings: ratings }),
+        body: JSON.stringify({
+          user_id: getUserId(),
+          date: todayKey(),
+          log_type: "nafs_check",
+          nafs_ratings: ratings,
+        }),
       });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        console.error("Nafs check sync failed:", res.status, errBody);
+      } else {
+        setSaved(true);
+      }
     } catch (err) {
       console.error("Failed to sync nafs ratings to server:", err);
     } finally {
@@ -120,7 +131,7 @@ export default function NafsPage() {
           disabled={saving}
           className="w-full bg-[#E8B84B] hover:bg-[#D6A83A] text-[#1E2A32] rounded-full py-3.5 font-semibold text-sm transition-colors disabled:opacity-60"
         >
-          {saving ? "Saving..." : "Save today's check"}
+          {saving ? "Saving..." : saved ? "Saved ✓" : "Save today's check"}
         </button>
       </div>
       </div>

@@ -46,26 +46,33 @@ export default function ChatPage() {
     setInput("");
     setLoading(true);
 
-    // CONFIRM: exact request/response shape for POST /chat. Assuming it takes
-    // { user_id, message } and returns { response: string } — adjust field names
-    // once the actual RAG pipeline contract (Arooba's side) is confirmed.
+    // Backend contract (FastAPI ChatRequest): { user_id: int, question: str }
+    // returns { answer: string, sources_used: int }
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ user_id: getUserId(), message: userMsg.content }),
+        body: JSON.stringify({ user_id: getUserId(), question: userMsg.content }),
       });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.detail || `Request failed with status ${res.status}`);
+      }
+
       const data = await res.json();
-      const reply: Message = { role: "assistant", content: data.response || data.answer || "..." };
+      const reply: Message = { role: "assistant", content: data.answer || "..." };
       const withReply = [...updated, reply];
       setMessages(withReply);
       localStorage.setItem("rise_chat_history", JSON.stringify(withReply));
       window.dispatchEvent(new Event("rise-chat-updated"));
     } catch (err) {
+      console.error("Chat request failed:", err);
       const errReply: Message = { role: "assistant", content: "Sorry, I couldn't reach the server just now. Please try again." };
       const withErr = [...updated, errReply];
       setMessages(withErr);
       localStorage.setItem("rise_chat_history", JSON.stringify(withErr));
+      window.dispatchEvent(new Event("rise-chat-updated"));
     } finally {
       setLoading(false);
     }
