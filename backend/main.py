@@ -3,7 +3,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, date
@@ -47,6 +47,14 @@ def create_access_token(user_id: int):
     expire = datetime.utcnow() + timedelta(hours=24)
     return jwt.encode({"sub": str(user_id), "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
 
+def parse_date(date_str: str) -> date:
+    """Every page sends date as 'YYYY-MM-DD'. Centralized so every route
+    parses it the same way and errors clearly if the format is ever wrong."""
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"Invalid date format: '{date_str}'. Expected YYYY-MM-DD.")
+
 
 # ---------- Token Verification ----------
 def get_current_user(
@@ -74,7 +82,7 @@ def read_root():
     "greetings": "Hellooooo Feelaaz!"}
 
 
-# ---------- Signup (no token needed — user doesn't have one yet) ----------
+# ---------- Signup ----------
 class SignupRequest(BaseModel):
     name: str
     email: str
@@ -95,7 +103,7 @@ def signup(data: SignupRequest, db: Session = Depends(get_db)):
     return {"user_id": user.id, "name": user.user_name, "email": user.email}
 
 
-# ---------- Login (no token needed — this is where token is created) ----------
+# ---------- Login ----------
 class LoginRequest(BaseModel):
     identifier: str
     password: str
@@ -113,18 +121,12 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     return {"access_token": token, "user_id": user.id, "name": user.user_name, "email": user.email}
 
 
-# ---------- Guest Signup (no token needed — creates a throwaway account) ----------
+# ---------- Guest Signup ----------
 @app.post("/guest-signup", status_code=201)
 def guest_signup(db: Session = Depends(get_db)):
-    """
-    Creates a throwaway account behind the scenes so guests get a real
-    user_id + JWT and can use every existing route (chat, habit-log,
-    muhasaba-log, etc.) exactly like a signed-up user, with zero backend
-    changes needed anywhere else.
-    """
     guest_id = secrets.token_hex(8)
     guest_email = f"guest_{guest_id}@rise.local"
-    guest_password = secrets.token_urlsafe(16)  # random, unusable, unknown to anyone
+    guest_password = secrets.token_urlsafe(16)
 
     hashed_pw = pwd_context.hash(guest_password)
     user = User(
@@ -141,7 +143,7 @@ def guest_signup(db: Session = Depends(get_db)):
     return {"access_token": token, "user_id": user.id, "name": user.user_name, "is_guest": True}
 
 
-# ---------- Claim Account (protected — upgrades a guest to a real account) ----------
+# ---------- Claim Account ----------
 class ClaimAccountRequest(BaseModel):
     user_id: int
     name: str
@@ -173,7 +175,7 @@ def claim_account(
     return {"access_token": token, "user_id": current_user.id, "name": current_user.user_name, "email": current_user.email}
 
 
-# ---------- Set Mode (protected) ----------
+# ---------- Set Mode ----------
 class SetModeRequest(BaseModel):
     user_id: int
     mode: str
@@ -194,7 +196,7 @@ def set_mode(
     return {"user_id": current_user.id, "mode": current_user.mode}
 
 
-# ---------- Onboarding (protected) ----------
+# ---------- Onboarding ----------
 class OnboardingAnswerIn(BaseModel):
     question: str
     answer: str
@@ -230,7 +232,7 @@ def save_onboarding(
     return {"user_id": data.user_id, "saved_count": len(data.answers)}
 
 
-# ---------- Habit Log (protected) ----------
+# ---------- Habit Log ----------
 class HabitIn(BaseModel):
     habit_name: str
     done: bool
@@ -250,15 +252,32 @@ def save_habit_log(
     if current_user.id != data.user_id:
         raise HTTPException(status_code=403, detail="Not authorized for this user")
 
+    log_date = parse_date(data.date)
+
     for h in data.habits:
         cleaned_name = h.habit_name.strip().lower()
-        db.add(HabitLog(
-            user_id=data.user_id,
-            date=data.date,
-            habit_name=cleaned_name,
-            done=h.done,
-            note=h.note
-        ))
+
+        # Upsert: if this habit already has a row for this date, update it
+        # instead of inserting a duplicate — otherwise toggling a habit on/off
+        # repeatedly in one day creates multiple rows and breaks today's count.
+        existing = db.query(HabitLog).filter(
+            HabitLog.user_id == data.user_id,
+            HabitLog.habit_name == cleaned_name,
+            HabitLog.date == log_date,
+        ).first()
+
+        if existing:
+            existing.done = h.done
+            existing.note = h.note
+        else:
+            db.add(HabitLog(
+                user_id=data.user_id,
+                date=log_date,
+                habit_name=cleaned_name,
+                done=h.done,
+                note=h.note
+            ))
+
         status_text = "done" if h.done else "not done"
         text_to_embed = f"On {data.date}, habit '{cleaned_name}' was {status_text}. Note: {h.note}"
         store_log(user_id=data.user_id, mode=current_user.mode, text=text_to_embed, log_type="habit_log")
@@ -267,11 +286,11 @@ def save_habit_log(
     return {"user_id": data.user_id, "date": data.date, "saved_count": len(data.habits)}
 
 
-# ---------- Reflection Log: Muhasaba / Nafs Tracker / Tawbah (protected) ----------
+# ---------- Reflection Log: Muhasaba / Nafs Tracker / Tawbah ----------
 class MuhasabaRequest(BaseModel):
     user_id: int
     date: str
-    log_type: str = "muhasaba"   # "muhasaba" | "nafs_check" | "tawbah"
+    log_type: str = "muhasaba"
     reflection_text: str = ""
     nafs_ratings: dict[str, int] = {}
 
@@ -289,9 +308,11 @@ def save_muhasaba_log(
     if data.log_type not in VALID_LOG_TYPES:
         raise HTTPException(status_code=422, detail=f"Invalid log_type. Must be one of {VALID_LOG_TYPES}")
 
+    log_date = parse_date(data.date)
+
     db.add(MuhasabaLog(
         user_id=data.user_id,
-        date=data.date,
+        date=log_date,
         log_type=data.log_type,
         reflection_text=data.reflection_text,
         nafs_ratings=data.nafs_ratings
@@ -304,7 +325,7 @@ def save_muhasaba_log(
     return {"user_id": data.user_id, "date": data.date, "log_type": data.log_type, "status": "saved"}
 
 
-# ---------- Chat (protected) ----------
+# ---------- Chat ----------
 class ChatRequest(BaseModel):
     user_id: int
     question: str
@@ -334,7 +355,7 @@ def chat(
         )
 
 
-# ---------- Dashboard (protected) ----------
+# ---------- Dashboard ----------
 @app.get("/dashboard/{user_id}")
 def get_dashboard(
     user_id: int,
@@ -344,31 +365,93 @@ def get_dashboard(
     if current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized for this user")
 
-    total_logs = db.query(HabitLog).filter(HabitLog.user_id == user_id).count()
+    today = date.today()
 
-    logged_dates = db.query(HabitLog.date).filter(
-        HabitLog.user_id == user_id
-    ).distinct().all()
-    logged_dates = set(d[0] for d in logged_dates)
+    if current_user.mode == "tazkiya":
+        # ---- Tazkiya dashboard data ----
+        muhasaba_today = db.query(MuhasabaLog).filter(
+            MuhasabaLog.user_id == user_id,
+            MuhasabaLog.log_type == "muhasaba",
+            MuhasabaLog.date == today,
+        ).first() is not None
 
-    streak = 0
-    current_day = date.today()
-    while str(current_day) in logged_dates:
-        streak += 1
-        current_day -= timedelta(days=1)
+        muhasaba_streak = 0
+        day = today
+        while True:
+            exists = db.query(MuhasabaLog).filter(
+                MuhasabaLog.user_id == user_id,
+                MuhasabaLog.log_type == "muhasaba",
+                MuhasabaLog.date == day,
+            ).first() is not None
+            if exists:
+                muhasaba_streak += 1
+                day -= timedelta(days=1)
+            elif day == today:
+                # today not done yet shouldn't zero out yesterday's streak
+                day -= timedelta(days=1)
+                continue
+            else:
+                break
 
-    recent_logs = db.query(HabitLog).filter(
-        HabitLog.user_id == user_id
-    ).order_by(HabitLog.date.desc()).limit(5).all()
+        return {
+            "user_id": user_id,
+            "mode": "tazkiya",
+            "muhasaba_today": muhasaba_today,
+            "muhasaba_streak": muhasaba_streak,
+        }
 
-    recent_activity = [
-        {"date": log.date, "habit_name": log.habit_name, "done": log.done}
-        for log in recent_logs
+    # ---- Habit dashboard data ----
+    # Distinct habit names this user has ever logged — this doubles as the
+    # "habit list" since there's no separate habit-definitions table.
+    habit_names = [
+        row[0] for row in
+        db.query(HabitLog.habit_name).filter(HabitLog.user_id == user_id).distinct().all()
     ]
+    habits = [{"id": name, "name": name} for name in habit_names]
+
+    today_logs = db.query(HabitLog).filter(
+        HabitLog.user_id == user_id,
+        HabitLog.date == today,
+        HabitLog.done == True,
+    ).all()
+    today_log = [row.habit_name for row in today_logs]
+
+    today_rate = round((len(today_log) / len(habits)) * 100) if habits else 0
+
+    week_rates = []
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        day_done = db.query(HabitLog).filter(
+            HabitLog.user_id == user_id,
+            HabitLog.date == day,
+            HabitLog.done == True,
+        ).count()
+        rate = round((day_done / len(habits)) * 100) if habits else 0
+        week_rates.append(rate)
+
+    best_streak = 0
+    day = today
+    while True:
+        day_done = db.query(HabitLog).filter(
+            HabitLog.user_id == user_id,
+            HabitLog.date == day,
+            HabitLog.done == True,
+        ).count()
+        if day_done > 0:
+            best_streak += 1
+            day -= timedelta(days=1)
+        elif day == today:
+            day -= timedelta(days=1)
+            continue
+        else:
+            break
 
     return {
         "user_id": user_id,
-        "streak": streak,
-        "total_logs": total_logs,
-        "recent_activity": recent_activity
+        "mode": "habit",
+        "best_streak": best_streak,
+        "today_rate": today_rate,
+        "week_rates": week_rates,
+        "habits": habits,
+        "today_log": today_log,
     }

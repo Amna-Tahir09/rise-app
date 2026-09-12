@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, JSON
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Date, JSON
 from datetime import datetime
 from backend.db import Base  
 
@@ -33,7 +33,7 @@ class HabitLog(Base):
     habit_name = Column(String)
     done = Column(Boolean, default=False)
     note = Column(String, nullable=True)
-    date = Column(DateTime, default=datetime.utcnow)
+    date = Column(Date)  # changed from DateTime — frontend always sends "YYYY-MM-DD"
 
 
 class MuhasabaLog(Base):
@@ -44,4 +44,4 @@ class MuhasabaLog(Base):
     log_type = Column(String, default="muhasaba")  # "muhasaba" | "nafs_check" | "tawbah"
     reflection_text = Column(String, nullable=True)
     nafs_ratings = Column(JSON)
-    date = Column(DateTime, default=datetime.utcnow)
+    date = Column(Date)  # changed from DateTime — frontend always sends "YYYY-MM-DD"
