@@ -24,9 +24,12 @@ def answer_question(user_id: int, mode: str, question: str) -> str:
 
     classical_context = ""
     if mode == "tazkiya":
-        classical_results = retrieve_classical_texts(query=question, top_k=3)
+        # Wider net (top_k=5, lower score floor) specifically for emotional/
+        # struggle-type questions — we'd rather surface a loosely-relevant
+        # classical explanation of a possible cause than find nothing at all.
+        classical_results = retrieve_classical_texts(query=question, top_k=5)
         classical_matches = classical_results.get("matches", [])
-        relevant_matches = [m for m in classical_matches if m.get("score", 0) >= 0.35]
+        relevant_matches = [m for m in classical_matches if m.get("score", 0) >= 0.25]
         if relevant_matches:
             classical_context = "\n".join(
                 f"- {m['metadata']['text']} (Source: {m['metadata'].get('source', 'Unknown')})"
@@ -83,7 +86,15 @@ def answer_question(user_id: int, mode: str, question: str) -> str:
     "- Weave it in naturally if it's genuinely relevant to what they're asking,\n"
     "  the way a friend who remembers past conversations would.\n"
     "- If it isn't relevant to the current message, ignore it completely rather\n"
-    "  than forcing a connection.\n\n"
+    "  than forcing a connection.\n"
+    "- If the user describes an emotional state or struggle (sadness, anger,\n"
+    "  envy, a fight, feeling low) and relevant classical teachings are provided\n"
+    "  below, actively use them to offer real insight into a likely underlying\n"
+    "  cause or trigger — not just comfort. For example: possible spiritual or\n"
+    "  psychological roots of that feeling, as classical scholars describe them.\n"
+    "  Present this as genuine understanding, citing the source naturally in a\n"
+    "  sentence (e.g. 'this often comes from..., as Ibn Qayyim writes'), not as\n"
+    "  a detached quote.\n\n"
 
     "TONE\n"
     "- Gentle, honest, and real — never generic motivational language ('you've\n"
