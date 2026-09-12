@@ -1,6 +1,7 @@
 from db import SessionLocal
 from models import User, OnboardingAnswer, HabitLog, MuhasabaLog
 from security import hash_password, verify_password
+from datetime import date as date_type
 
 
 def create_user(email: str, password: str, mode: str, user_name: str = None):
@@ -32,9 +33,9 @@ def save_onboarding_answer(user_id: int, mode: str, question: str, answer: str):
     return entry
 
 
-def save_habit_log(user_id: int, habit_name: str, done: bool, note: str = None):
+def save_habit_log(user_id: int, habit_name: str, done: bool, log_date: date_type, note: str = None):
     db = SessionLocal()
-    log = HabitLog(user_id=user_id, habit_name=habit_name, done=done, note=note)
+    log = HabitLog(user_id=user_id, habit_name=habit_name, done=done, note=note, date=log_date)
     db.add(log)
     db.commit()
     db.refresh(log)
@@ -42,9 +43,9 @@ def save_habit_log(user_id: int, habit_name: str, done: bool, note: str = None):
     return log
 
 
-def save_muhasaba_log(user_id: int, reflection_text: str, nafs_ratings: dict):
+def save_muhasaba_log(user_id: int, reflection_text: str, nafs_ratings: dict, log_date: date_type, log_type: str = "muhasaba"):
     db = SessionLocal()
-    log = MuhasabaLog(user_id=user_id, reflection_text=reflection_text, nafs_ratings=nafs_ratings)
+    log = MuhasabaLog(user_id=user_id, log_type=log_type, reflection_text=reflection_text, nafs_ratings=nafs_ratings, date=log_date)
     db.add(log)
     db.commit()
     db.refresh(log)
