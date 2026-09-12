@@ -48,10 +48,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [tawbahStreak, setTawbahStreak] = useState(0);
   const [mounted, setMounted] = useState(false);
 
-  // Fetch the same GET /dashboard/{user_id} data the dashboard page uses, so the
-  // sidebar's streak/progress numbers always match what's shown on the page itself.
-  // CONFIRM: response field names (best_streak, today_rate, muhasaba_streak) — see
-  // the note in app/dashboard/page.tsx for the full list of fields we're assuming.
   const fetchStats = async () => {
     const userId = getUserId();
     if (!userId) return;
@@ -87,8 +83,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
   }, []);
 
-  // Re-fetch on every route change so the sidebar stays in sync with whatever
-  // was just saved on the page the user came from (habit log, muhasaba, etc.).
   useEffect(() => {
     if (!mounted) return;
     fetchStats();
@@ -96,12 +90,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navItems = mode === "habit" ? HABIT_NAV_ITEMS : TAZKIYA_NAV_ITEMS;
 
-  const switchMode = () => {
+  const switchMode = async () => {
     const newMode = mode === "habit" ? "tazkiya" : "habit";
     localStorage.setItem("rise_mode", newMode);
     setMode(newMode);
     window.dispatchEvent(new Event("rise-mode-changed"));
-    router.push("/dashboard");
+
+    // Sync the new mode to the backend — without this, current_user.mode
+    // stays out of date in the database and /chat breaks.
+    const userId = getUserId();
+    const token = getToken();
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/set-mode`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ user_id: Number(userId), mode: newMode }),
+      });
+    } catch (err) {
+      console.error("Failed to sync mode to server:", err);
+    }
+
+    // Only send them to onboarding the first time they switch into this
+    // specific mode. If they've already onboarded for it before, go
+    // straight to the dashboard.
+    const alreadyOnboarded = localStorage.getItem(`rise_onboarding_done_${newMode}`) === "true";
+    router.push(alreadyOnboarded ? "/dashboard" : "/onboarding");
   };
 
   const handleSignOut = () => {
