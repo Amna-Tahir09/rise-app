@@ -8,9 +8,26 @@ export default function ModePage() {
   const [mode, setMode] = useState("habit");
   const router = useRouter();
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     localStorage.setItem("rise_mode", mode);
-    router.replace("/onboarding");
+
+    const userId = localStorage.getItem("rise_user_id") || "";
+    const token = localStorage.getItem("rise_access_token") || "";
+
+    // Sync the chosen mode to the backend so current_user.mode is actually
+    // set in the database — without this, /chat breaks entirely since it
+    // filters by mode and null is not a valid filter value.
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/set-mode`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ user_id: Number(userId), mode }),
+      });
+    } catch (err) {
+      console.error("Failed to sync mode to server:", err);
+    } finally {
+      router.replace("/onboarding");
+    }
   };
 
   return (
