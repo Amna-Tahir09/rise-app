@@ -10,6 +10,55 @@ type Message = { role: "user" | "assistant"; content: string };
 const getUserId = () => localStorage.getItem("rise_user_id") || "";
 const getToken = () => localStorage.getItem("rise_access_token") || "";
 
+// Lightweight markdown rendering — no extra dependency needed. Handles the
+// two things the model actually produces: **bold** text and "- " bullet
+// lists. Also defensively splits inline "- **" bullets onto their own line,
+// in case the model still crams them into one paragraph despite the prompt.
+function renderMessageContent(content: string) {
+  const normalized = content.replace(/\s+-\s+\*\*/g, "\n- **");
+  const lines = normalized.split("\n").filter((l) => l.trim() !== "");
+
+  const renderInline = (text: string) => {
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) =>
+      part.startsWith("**") && part.endsWith("**") ? (
+        <strong key={i}>{part.slice(2, -2)}</strong>
+      ) : (
+        <span key={i}>{part}</span>
+      )
+    );
+  };
+
+  const elements: React.ReactNode[] = [];
+  let listBuffer: string[] = [];
+
+  const flushList = () => {
+    if (listBuffer.length > 0) {
+      elements.push(
+        <ul key={`list-${elements.length}`} className="list-disc pl-5 space-y-1 my-1.5">
+          {listBuffer.map((item, i) => (
+            <li key={i}>{renderInline(item)}</li>
+          ))}
+        </ul>
+      );
+      listBuffer = [];
+    }
+  };
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("- ")) {
+      listBuffer.push(trimmed.slice(2));
+    } else {
+      flushList();
+      elements.push(<p key={`p-${elements.length}`} className="mb-1.5 last:mb-0">{renderInline(trimmed)}</p>);
+    }
+  });
+  flushList();
+
+  return elements;
+}
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -50,6 +99,7 @@ export default function ChatPage() {
     setInput("");
     setLoading(true);
 
+    // Backend contract (FastAPI ChatRequest): { user_id: int, question: str }
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
         method: "POST",
@@ -109,7 +159,7 @@ export default function ChatPage() {
                   m.role === "user" ? "bg-[#2E5E4E] text-white rounded-br-md" : "bg-[#F4F1EA] text-[#1E2A32] rounded-bl-md"
                 }`}
               >
-                {m.content}
+                {m.role === "assistant" ? renderMessageContent(m.content) : m.content}
               </div>
             </div>
           ))}
