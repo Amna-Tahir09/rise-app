@@ -285,6 +285,18 @@ def chat(
             mode=current_user.mode,
             question=data.question
         )
+
+        # Save this exchange so future questions can reference what was
+        # actually discussed here — without this, chat has no memory of
+        # its own past conversations, only onboarding/habit/reflection logs.
+        text_to_embed = f"User asked: {data.question} | Rise replied: {answer}"
+        store_log(
+            user_id=data.user_id,
+            mode=current_user.mode,
+            text=text_to_embed,
+            log_type="chat_history"
+        )
+
         return {"answer": answer, "sources_used": 1}
     except Exception as e:
         import traceback

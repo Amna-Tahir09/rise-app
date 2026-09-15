@@ -23,6 +23,7 @@ import FloatingChatButton from "./_components/FloatingChatButton";
 const HABIT_NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/dashboard/habits", label: "Habits Tracker", icon: CheckSquare },
+  { href: "/onboarding", label: "Onboarding", icon: Compass },
   { href: "/dashboard/chat", label: "Ask Rise", icon: MessageCircle },
 ];
 
@@ -31,6 +32,7 @@ const TAZKIYA_NAV_ITEMS = [
   { href: "/dashboard/muhasaba", label: "Daily Muhasaba", icon: BookOpen },
   { href: "/dashboard/nafs", label: "Nafs Tracker", icon: Activity },
   { href: "/dashboard/tawbah", label: "Tawbah", icon: Shield },
+  { href: "/onboarding", label: "Onboarding", icon: Compass },
   { href: "/dashboard/chat", label: "Ask Rise", icon: MessageCircle },
 ];
 
