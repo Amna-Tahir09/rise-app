@@ -1,3 +1,6 @@
+// Save this as: app/dashboard/_components/FloatingChatButton.tsx
+// CHANGE: Added a short disclaimer line under the header inside the popup.
+// Everything else is unchanged from your real file.
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -135,9 +138,14 @@ export default function FloatingChatButton() {
 
       {open && (
         <div className="fixed bottom-24 right-6 w-[92vw] sm:w-96 h-[70vh] max-h-[560px] bg-white border border-[#DCE4DC] rounded-3xl shadow-2xl flex flex-col z-40 overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#F0EDE6] flex items-center gap-2">
-            <MessageCircle size={16} className="text-[#4B6E6D]" />
-            <span className="text-sm font-semibold text-[#2C3E40]">Ask Rise</span>
+          <div className="px-5 py-3 border-b border-[#F0EDE6]">
+            <div className="flex items-center gap-2">
+              <MessageCircle size={16} className="text-[#4B6E6D]" />
+              <span className="text-sm font-semibold text-[#2C3E40]">Ask Rise</span>
+            </div>
+            <p className="text-[10px] text-[#8DA0A0] mt-1 leading-snug">
+              Grounded in your logs and classical texts — not a substitute for a scholar or professional.
+            </p>
           </div>
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">

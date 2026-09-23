@@ -1,3 +1,12 @@
+// Save this as: app/dashboard/page.tsx
+// CHANGE (earlier fix, kept): handleToggleHabit previously called
+// loadHabitData() BEFORE the POST /habit-log finished, so best_streak
+// raced ahead of the save and showed stale data. Now it refetches again
+// in `finally`, after the save has genuinely completed.
+// CHANGE (this pass): reads the mode-specific onboarding goal
+// (rise_onboarding_${mode}, first question's answer) and passes it down
+// as a `goal` prop to both dashboards, so the goal the user set during
+// onboarding is actually visible somewhere after they set it.
 "use client";
 
 import { useState, useEffect } from "react";
@@ -21,28 +30,229 @@ type HabitDashboardData = {
   week_rates?: number[];
   habits?: { id: string; name: string }[];
   today_log?: string[];
+  insight?: string | null;
+};
+
+type TazkiyaInsight = {
+  text: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  chatPrefill?: string;
 };
 
 type TazkiyaDashboardData = {
   muhasaba_today?: boolean;
   muhasaba_streak?: number;
+  insight?: TazkiyaInsight | null;
 };
+
+const NAFS_LABELS: Record<string, string> = {
+  takabbur: "Takabbur (pride)",
+  hasad: "Hasad (envy)",
+  riya: "Riya (showing off)",
+  ghadab: "Ghadab (anger)",
+  bukhl: "Bukhl (stinginess)",
+  kizb: "Kizb (dishonesty)",
+  kasl: "Kasl (laziness in worship)",
+};
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+// Computes one "Rise noticed..." insight for Habit mode, in priority order:
+// a strong per-habit streak, then a day-of-week pattern (needs real
+// history), then a gentle nudge if nothing's been logged in a while.
+// Returns null when there isn't enough data to say anything meaningful yet.
+function computeHabitInsight(habits: { id: string; name: string }[]): string | null {
+  if (habits.length === 0) return null;
+
+  let bestHabitName = "";
+  let bestHabitStreak = 0;
+  for (const h of habits) {
+    let streak = 0;
+    for (let i = 0; i < 60; i++) {
+      const day = dateNDaysAgo(i);
+      const dayLog: string[] = JSON.parse(localStorage.getItem(`rise_habit_log_${day}`) || "[]");
+      if (dayLog.includes(h.id)) {
+        streak++;
+      } else if (i === 0) {
+        continue;
+      } else {
+        break;
+      }
+    }
+    if (streak > bestHabitStreak) {
+      bestHabitStreak = streak;
+      bestHabitName = h.name;
+    }
+  }
+  if (bestHabitStreak >= 3) {
+    return `You've completed "${bestHabitName}" ${bestHabitStreak} days running — keep it up.`;
+  }
+
+  const dayTotals: Record<number, { done: number; total: number }> = {};
+  let daysWithData = 0;
+  for (let i = 0; i < 28; i++) {
+    const day = dateNDaysAgo(i);
+    const raw = localStorage.getItem(`rise_habit_log_${day}`);
+    if (raw !== null) {
+      daysWithData++;
+      const dow = new Date(day).getDay();
+      const dayLog: string[] = JSON.parse(raw);
+      if (!dayTotals[dow]) dayTotals[dow] = { done: 0, total: 0 };
+      dayTotals[dow].total++;
+      dayTotals[dow].done += dayLog.length;
+    }
+  }
+  if (daysWithData >= 10) {
+    let bestDay = -1;
+    let bestRate = -1;
+    for (const [dow, v] of Object.entries(dayTotals)) {
+      if (v.total >= 2) {
+        const rate = v.done / v.total;
+        if (rate > bestRate) {
+          bestRate = rate;
+          bestDay = Number(dow);
+        }
+      }
+    }
+    if (bestDay >= 0 && bestRate > 0) {
+      return `${DAY_NAMES[bestDay]}s tend to be your strongest day.`;
+    }
+  }
+
+  let quietDays = 0;
+  for (let i = 0; i < 14; i++) {
+    const day = dateNDaysAgo(i);
+    const dayLog: string[] = JSON.parse(localStorage.getItem(`rise_habit_log_${day}`) || "[]");
+    if (dayLog.length === 0) {
+      quietDays++;
+    } else {
+      break;
+    }
+  }
+  if (quietDays >= 2) {
+    return `It's been ${quietDays} days since you last logged a habit — a small step today still counts.`;
+  }
+
+  return null;
+}
+
+// Same idea for Tazkiya: a recurring nafs pattern first (most worth
+// surfacing, and it links into Ask Rise), then reflection consistency,
+// then a gentle "it's been a while" nudge.
+function computeTazkiyaInsight(): TazkiyaInsight | null {
+  const NAFS_KEYS = Object.keys(NAFS_LABELS);
+  let worstKey = "";
+  let worstStreak = 0;
+  for (const key of NAFS_KEYS) {
+    let streak = 0;
+    for (let i = 0; i < 14; i++) {
+      const day = dateNDaysAgo(i);
+      const raw = localStorage.getItem(`rise_nafs_check_${day}`);
+      if (!raw) {
+        if (i === 0) continue;
+        break;
+      }
+      const ratings = JSON.parse(raw);
+      const val = ratings[key] || 0;
+      if (val >= 3) {
+        streak++;
+      } else if (i === 0) {
+        continue;
+      } else {
+        break;
+      }
+    }
+    if (streak > worstStreak) {
+      worstStreak = streak;
+      worstKey = key;
+    }
+  }
+  if (worstStreak >= 3) {
+    const shortName = NAFS_LABELS[worstKey].split(" (")[0];
+    return {
+      text: `${NAFS_LABELS[worstKey]} has come up strongly ${worstStreak} days in a row — want to talk it through?`,
+      ctaLabel: "Talk it through",
+      ctaHref: "/dashboard/chat",
+      chatPrefill: `Why does ${shortName} keep coming up for me lately?`,
+    };
+  }
+
+  let doneCount = 0;
+  for (let i = 0; i < 5; i++) {
+    const day = dateNDaysAgo(i);
+    if (localStorage.getItem(`rise_muhasaba_log_${day}`) === "true") doneCount++;
+  }
+  if (doneCount >= 3) {
+    return { text: `You've reflected ${doneCount} of the last 5 days — that's real consistency.` };
+  }
+
+  let sinceLast = -1;
+  for (let i = 0; i < 30; i++) {
+    const day = dateNDaysAgo(i);
+    if (localStorage.getItem(`rise_muhasaba_log_${day}`) === "true") {
+      sinceLast = i;
+      break;
+    }
+  }
+  if (sinceLast >= 2) {
+    return { text: `It's been ${sinceLast} days since your last check-in — even a short one counts.` };
+  }
+
+  return null;
+}
 
 export default function DashboardPage() {
   const [mode, setMode] = useState("habit");
   const [username, setUsername] = useState<string | null>(null);
+  const [goals, setGoals] = useState<{ id: string; text: string }[]>([]);
   const [habitData, setHabitData] = useState<HabitDashboardData>({});
   const [tazkiyaData, setTazkiyaData] = useState<TazkiyaDashboardData>({});
   const [loading, setLoading] = useState(true);
   const { requireAccount, GateModal } = useSignupGate();
 
+  const loadGoals = (currentMode: string) => {
+    try {
+      const goalsKey = `rise_goals_${currentMode}`;
+      let saved = JSON.parse(localStorage.getItem(goalsKey) || "[]");
+      if (!Array.isArray(saved)) saved = [];
+
+      // One-time migration: onboarding submissions saved before goals were
+      // tracked as a list only kept a single, overwritten answer. Pull that
+      // in as the first goal so nothing already entered is lost.
+      if (saved.length === 0) {
+        const legacy = JSON.parse(localStorage.getItem(`rise_onboarding_${currentMode}`) || "[]");
+        const legacyText = legacy[0]?.answer;
+        if (legacyText) {
+          saved = [{ id: crypto.randomUUID(), text: legacyText }];
+          localStorage.setItem(goalsKey, JSON.stringify(saved));
+        }
+      }
+
+      setGoals(saved);
+    } catch {
+      setGoals([]);
+    }
+  };
+
+  const deleteGoal = (id: string) => {
+    const updated = goals.filter((g) => g.id !== id);
+    setGoals(updated);
+    localStorage.setItem(`rise_goals_${mode}`, JSON.stringify(updated));
+  };
+
   useEffect(() => {
-    setMode(localStorage.getItem("rise_mode") || "habit");
+    const savedMode = localStorage.getItem("rise_mode") || "habit";
+    setMode(savedMode);
     setUsername(localStorage.getItem("rise_username"));
+    loadGoals(savedMode);
     loadHabitData();
     loadTazkiyaData();
 
-    const handleModeChange = () => setMode(localStorage.getItem("rise_mode") || "habit");
+    const handleModeChange = () => {
+      const updated = localStorage.getItem("rise_mode") || "habit";
+      setMode(updated);
+      loadGoals(updated);
+    };
     const handleDataChange = () => {
       loadHabitData();
       loadTazkiyaData();
@@ -110,6 +320,7 @@ export default function DashboardPage() {
       week_rates: weekRates,
       habits,
       today_log: todayLog,
+      insight: computeHabitInsight(habits),
     });
     setLoading(false);
   };
@@ -133,6 +344,7 @@ export default function DashboardPage() {
     setTazkiyaData({
       muhasaba_today: muhasabaToday,
       muhasaba_streak: streak,
+      insight: computeTazkiyaInsight(),
     });
     setLoading(false);
   };
@@ -147,7 +359,9 @@ export default function DashboardPage() {
     const updated = isDone ? currentLog.filter((id: string) => id !== habitId) : [...currentLog, habitId];
     localStorage.setItem(`rise_habit_log_${todayKey()}`, JSON.stringify(updated));
 
-    // Reflect the change immediately in the dashboard UI
+    // Reflect the checkbox + today's % instantly — these are always computed
+    // from localStorage, so this part is accurate immediately regardless of
+    // the network request below.
     loadHabitData();
 
     try {
@@ -166,6 +380,11 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error("Failed to sync habit-log to server:", err);
+    } finally {
+      // Re-fetch AFTER the save has actually completed (success or fail),
+      // so best_streak reflects the just-saved change instead of racing
+      // ahead of it and showing stale server state.
+      loadHabitData();
     }
   };
 
@@ -177,9 +396,9 @@ export default function DashboardPage() {
   return (
     <>
       {mode === "habit" ? (
-        <HabitDashboard data={habitData} greetingName={greetingName} today={today} onToggleHabit={handleToggleHabit} />
+        <HabitDashboard data={habitData} greetingName={greetingName} today={today} goals={goals} onDeleteGoal={deleteGoal} onToggleHabit={handleToggleHabit} />
       ) : (
-        <TazkiyaDashboard data={tazkiyaData} greetingName={greetingName} today={today} />
+        <TazkiyaDashboard data={tazkiyaData} greetingName={greetingName} today={today} goals={goals} onDeleteGoal={deleteGoal} />
       )}
       <GateModal />
     </>

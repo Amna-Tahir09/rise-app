@@ -1,3 +1,9 @@
+// Save this as: app/signup/page.tsx
+// CHANGE 1: Added a loading state. This page does TWO sequential network calls
+// (signup, then login) with zero prior feedback — almost certainly the most
+// likely place for "not working that great" to be felt, even more than the
+// login page itself.
+// CHANGE 2: Confirm Password now submits on Enter, matching the login page.
 "use client";
 
 import { useState } from "react";
@@ -10,6 +16,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const clearStaleLocalData = () => {
@@ -32,6 +39,7 @@ export default function SignupPage() {
       return;
     }
     setError("");
+    setLoading(true);
 
     clearStaleLocalData();
 
@@ -47,6 +55,7 @@ export default function SignupPage() {
           ? data.detail.map((d: any) => d.msg || JSON.stringify(d)).join(", ")
           : (data.detail || "Signup failed. Please try again.");
         setError(errMsg);
+        setLoading(false);
         return;
       }
       const data = await res.json();
@@ -68,6 +77,7 @@ export default function SignupPage() {
       router.replace("/mode");
     } catch (err) {
       setError("Could not reach the server. Please try again.");
+      setLoading(false);
     }
   };
 
@@ -136,11 +146,15 @@ export default function SignupPage() {
           <label className="block text-sm font-semibold text-[#2C3E40] mb-2">Confirm Password</label>
           <div className="relative mb-7">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8DA0A0]" size={18} />
-            <input type="password" className="bg-[#EAF0E8] border border-[#DCE4DC] pl-11 pr-4 py-3 w-full rounded-full focus:outline-none focus:border-[#4B6E6D] text-[#2C3E40]" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            <input type="password" className="bg-[#EAF0E8] border border-[#DCE4DC] pl-11 pr-4 py-3 w-full rounded-full focus:outline-none focus:border-[#4B6E6D] text-[#2C3E40]" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSignup()} />
           </div>
 
-          <button onClick={handleSignup} className="bg-[#4B6E6D] hover:bg-[#3A5654] text-white px-4 py-3 rounded-full w-full font-semibold transition-colors">
-            Create account
+          <button
+            onClick={handleSignup}
+            disabled={loading}
+            className="bg-[#4B6E6D] hover:bg-[#3A5654] text-white px-4 py-3 rounded-full w-full font-semibold transition-colors disabled:opacity-60"
+          >
+            {loading ? "Creating account..." : "Create account"}
           </button>
 
           <p className="text-center text-sm text-[#5E7473] mt-6">

@@ -1,3 +1,8 @@
+// Save this as: app/onboarding/page.tsx
+// CHANGE: rise_onboarding was a single shared key — completing onboarding
+// for one mode silently overwrote the other mode's saved answers. Now keyed
+// per mode (rise_onboarding_habit / rise_onboarding_tazkiya), matching the
+// existing rise_onboarding_done_${mode} pattern.
 "use client";
 
 import { useState, useEffect } from "react";
@@ -105,7 +110,18 @@ export default function OnboardingPage() {
       return;
     }
     const payload = questions.map((q, i) => ({ question: q.question, answer: answers[i] }));
-    localStorage.setItem("rise_onboarding", JSON.stringify(payload));
+    // Mode-specific key — so onboarding for one mode never overwrites the
+    // other mode's saved goal/answers.
+    localStorage.setItem(`rise_onboarding_${mode}`, JSON.stringify(payload));
+
+    // The first question's answer is treated as "the goal" — appended to a
+    // growing list (never overwritten), so every goal ever entered stays
+    // visible on the dashboard, each with its own delete button.
+    const goalsKey = `rise_goals_${mode}`;
+    const existingGoals = JSON.parse(localStorage.getItem(goalsKey) || "[]");
+    const newGoal = { id: crypto.randomUUID(), text: answers[0] };
+    localStorage.setItem(goalsKey, JSON.stringify([...existingGoals, newGoal]));
+
     setSubmitting(true);
 
     try {

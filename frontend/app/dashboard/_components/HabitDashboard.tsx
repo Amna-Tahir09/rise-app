@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Flame, CheckSquare, Clock, CheckCircle2 } from "lucide-react";
+import { Flame, CheckSquare, Clock, CheckCircle2, Target, Sparkles, X } from "lucide-react";
 
 type DashboardData = {
   best_streak?: number;
@@ -9,6 +9,7 @@ type DashboardData = {
   week_rates?: number[];
   habits?: { id: string; name: string }[];
   today_log?: string[];
+  insight?: string | null;
 };
 
 const DAY_LABELS = ["6d", "5d", "4d", "3d", "2d", "Yest", "Today"];
@@ -17,11 +18,15 @@ export default function HabitDashboard({
   data,
   greetingName,
   today,
+  goals,
+  onDeleteGoal,
   onToggleHabit,
 }: {
   data: DashboardData;
   greetingName: string;
   today: string;
+  goals?: { id: string; text: string }[];
+  onDeleteGoal?: (id: string) => void;
   onToggleHabit?: (habitId: string, habitName: string) => void;
 }) {
   const habits = data.habits ?? [];
@@ -47,7 +52,7 @@ export default function HabitDashboard({
       />
       <div className="relative z-10">
         <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
-          <div>
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl px-4 py-3">
             <h1 className="text-3xl sm:text-4xl font-serif text-[#1E2A32]">Welcome back{greetingName}</h1>
             <p className="text-sm text-[#1E2A32] mt-1">{today}</p>
           </div>
@@ -62,6 +67,43 @@ export default function HabitDashboard({
             </div>
           </div>
         </div>
+
+        {goals && goals.length > 0 && (
+          <div className="bg-white border border-[#E5E0D5] rounded-2xl p-4 mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Target size={16} className="text-[#2E5E4E]" />
+              <p className="text-[10px] tracking-wide text-[#8A8478] uppercase">Your goals</p>
+            </div>
+            <div className="space-y-2">
+              {goals.map((g) => (
+                <div key={g.id} className="flex items-start justify-between gap-2 bg-[#F4F1EA] rounded-xl px-3 py-2">
+                  <p className="text-sm text-[#1E2A32]">{g.text}</p>
+                  <button
+                    onClick={() => onDeleteGoal?.(g.id)}
+                    className="text-[#C9C4B8] hover:text-[#E0674F] flex-shrink-0 mt-0.5 transition-colors"
+                    aria-label="Delete goal"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* "Rise noticed..." — a quiet, automatic observation from the same
+            data below, so the log feels like it's being read, not just
+            stored. Only renders once there's enough real history to say
+            something true. */}
+        {data.insight && (
+          <div className="bg-[#FBF3E0] border border-[#E8B84B]/40 rounded-2xl p-4 mb-6 flex items-start gap-3">
+            <Sparkles size={16} className="text-[#C99A2E] mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-[10px] tracking-wide text-[#8A6D2F] uppercase mb-0.5">Rise noticed</p>
+              <p className="text-sm text-[#4A4536]">{data.insight}</p>
+            </div>
+          </div>
+        )}
 
         <div className="bg-[#2E5E4E] rounded-2xl p-6 mb-6">
           <p className="text-xs text-[#B7D4C6] mb-2">Keep going</p>

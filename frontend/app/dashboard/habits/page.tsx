@@ -1,3 +1,7 @@
+// Save this as: app/dashboard/habits/page.tsx
+// CHANGE: Added a short line under the header explaining that entries feed
+// Ask Rise's personalized guidance, not just a log. (Everything else
+// unchanged from your real file.)
 "use client";
 
 import { useState, useEffect } from "react";
@@ -127,7 +131,7 @@ export default function HabitsPage() {
         <ArrowLeft size={14} /> Back to dashboard
       </button>
 
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-serif text-[#1E2A32] flex items-center gap-2">
             Habits Tracker <SquareCheck size={24} className="text-[#2E5E4E]" />
@@ -138,6 +142,11 @@ export default function HabitsPage() {
           <Plus size={16} /> Add habit
         </button>
       </div>
+
+      <p className="text-xs text-[#8A8478] mb-6 max-w-md">
+        Every entry helps Ask Rise recognize your real patterns and give grounded
+        guidance — not just track a log.
+      </p>
 
       {formOpen && (
         <div className="bg-white border-2 border-[#2E5E4E] rounded-2xl p-6 mb-5">

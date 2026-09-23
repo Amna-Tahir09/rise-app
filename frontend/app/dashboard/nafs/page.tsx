@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Activity } from "lucide-react";
+import { ArrowLeft, Activity, Sparkles } from "lucide-react";
 import { useSignupGate } from "../_components/SignupGate";
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
@@ -19,6 +19,19 @@ const DISEASES = [
   { key: "kasl", name: "Kasl", sub: "Laziness in worship", desc: "Delaying or rushing through acts of worship." },
 ];
 
+// Plain, practical suggestions — deliberately NOT attributed to any scholar
+// or presented as a classical quote. Keeping these generic avoids the exact
+// fabrication risk this whole app is built to prevent.
+const OVERCOME_TIPS: Record<string, string> = {
+  takabbur: "Try genuinely thanking someone today for something they did better than you.",
+  ghadab: "Next time you feel it rising, pause and take three slow breaths before responding.",
+  hasad: "Make a small dua for the person whose blessing you envied.",
+  riya: "Do one good deed today that only Allah will know about.",
+  bukhl: "Give something small away today — time, money, or help — without expecting anything back.",
+  kizb: "Notice today when you're tempted to exaggerate or soften the truth, and choose honesty instead.",
+  kasl: "Pick one prayer today and give it your full, unrushed attention.",
+};
+
 const severityLabel = (n: number) => (n === 0 ? "None" : n <= 2 ? "Mild" : n <= 3 ? "Moderate" : "Severe");
 const severityColor = (n: number) => (n === 0 ? "text-[#B0AA9C]" : n <= 2 ? "text-[#2E5E4E]" : "text-[#E0674F]");
 
@@ -26,15 +39,23 @@ export default function NafsPage() {
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [highlight, setHighlight] = useState<{ key: string; value: number } | null>(null);
   const router = useRouter();
   const { requireAccount, GateModal } = useSignupGate();
 
   useEffect(() => {
-    const last = JSON.parse(localStorage.getItem("rise_last_nafs_check") || "{}");
-    if (last?.date === todayKey()) setRatings(last.ratings || {});
+    const saved = JSON.parse(localStorage.getItem(`rise_nafs_check_${todayKey()}`) || "{}");
+    setRatings(saved || {});
   }, []);
 
   const total = Object.values(ratings).reduce((sum, v) => sum + (v || 0), 0);
+
+  const handleTalkItThrough = () => {
+    if (!highlight) return;
+    const label = DISEASES.find((d) => d.key === highlight.key)?.name || highlight.key;
+    localStorage.setItem("rise_chat_prefill", `I rated ${label} high today — can you help me understand and work on it?`);
+    router.push("/dashboard/chat");
+  };
 
   const setRating = (key: string, value: number) => {
     setRatings((prev) => ({ ...prev, [key]: value }));
@@ -43,9 +64,29 @@ export default function NafsPage() {
   const handleSave = async () => {
     if (requireAccount()) return; // guests get the signup prompt instead of a real save
 
+    // Find the single highest-rated disease this submission. Only surface
+    // a tip when it's genuinely high (4-5, "Severe" on the existing scale)
+    // — not just whichever happens to be the max of a mostly-zero set.
+    let topKey = "";
+    let topVal = -1;
+    for (const d of DISEASES) {
+      const v = ratings[d.key] || 0;
+      if (v > topVal) {
+        topVal = v;
+        topKey = d.key;
+      }
+    }
+    setHighlight(topVal >= 4 ? { key: topKey, value: topVal } : null);
+
     setSaving(true);
-    const payload = { date: todayKey(), ratings };
-    localStorage.setItem("rise_last_nafs_check", JSON.stringify(payload));
+    // Per-day key (not a single shared key) so multi-day patterns — like a
+    // nafs disease trending up over several days — can actually be computed
+    // later for the dashboard insight card.
+    localStorage.setItem(`rise_nafs_check_${todayKey()}`, JSON.stringify(ratings));
+    // A Nafs check-in is one of the three ways to "show up" for Tazkiya
+    // today (alongside Muhasaba and Tawbah) — without this line, doing
+    // only a nafs check-in never counted toward the streak at all.
+    localStorage.setItem(`rise_muhasaba_log_${todayKey()}`, "true");
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/muhasaba-log`, {
@@ -135,6 +176,30 @@ export default function NafsPage() {
         >
           {saving ? "Saving..." : saved ? "Saved ✓" : "Save today's check"}
         </button>
+
+        {saved && highlight && (
+          <div className="bg-[#FBF3E0] border border-[#E8B84B]/40 rounded-2xl p-4 mt-4">
+            <div className="flex items-start gap-3">
+              <Sparkles size={16} className="text-[#C99A2E] mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-[10px] tracking-wide text-[#8A6D2F] uppercase mb-0.5">
+                  {DISEASES.find((d) => d.key === highlight.key)?.name} came up high today
+                </p>
+                <p className="text-sm text-[#4A4536]">{OVERCOME_TIPS[highlight.key]}</p>
+                <button
+                  onClick={handleTalkItThrough}
+                  className="text-xs font-semibold text-[#8A6D2F] mt-2 underline hover:text-[#4A4536] transition-colors"
+                >
+                  Talk it through →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <p className="text-center text-xs text-[#8A8478] mt-4">
+          Your ratings are private and only used to help Rise recognize your own patterns.
+        </p>
       </div>
       </div>
       <GateModal />

@@ -1,3 +1,7 @@
+// Save this as: app/dashboard/tawbah/page.tsx
+// CHANGE: On successful save, now also sets rise_muhasaba_log_{date} = "true",
+// same as muhasaba and nafs — so a Tawbah entry counts toward the local
+// Tazkiya streak too, not just Daily Muhasaba entries.
 "use client";
 
 import { useState, useEffect } from "react";
@@ -77,6 +81,9 @@ export default function TawbahPage() {
         console.error("Tawbah sync failed:", res.status, errBody);
       } else {
         setSaved(true);
+        // Shared with muhasaba/nafs so any Tazkiya activity today counts
+        // toward the local streak, not just the Daily Muhasaba entry.
+        localStorage.setItem(`rise_muhasaba_log_${todayKey()}`, "true");
       }
     } catch (err) {
       console.error("Failed to sync tawbah to server:", err);

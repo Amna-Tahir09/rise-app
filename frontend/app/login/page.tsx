@@ -1,3 +1,10 @@
+// Save this as: app/login/page.tsx
+// CHANGE 1: Added a loading state to handleLogin. Previously the button gave
+// zero feedback while the request was in flight — likely why it felt "not
+// working that great." Now it disables and shows "Signing in..." until the
+// response comes back.
+// CHANGE 2: Both fields now submit on Enter, not just on clicking the
+// button.
 "use client";
 
 import { useState } from "react";
@@ -8,6 +15,7 @@ export default function LoginPage() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const clearStaleLocalData = () => {
@@ -22,6 +30,7 @@ export default function LoginPage() {
       return;
     }
     setError("");
+    setLoading(true);
 
     clearStaleLocalData();
 
@@ -37,6 +46,7 @@ export default function LoginPage() {
           ? data.detail.map((d: any) => d.msg || JSON.stringify(d)).join(", ")
           : (data.detail || "Login failed. Please check your credentials.");
         setError(errMsg);
+        setLoading(false);
         return;
       }
       const data = await res.json();
@@ -48,6 +58,7 @@ export default function LoginPage() {
       router.replace("/mode");
     } catch (err) {
       setError("Could not reach the server. Please try again.");
+      setLoading(false);
     }
   };
 
@@ -95,17 +106,21 @@ export default function LoginPage() {
           <label className="block text-sm font-semibold text-[#2C3E40] mb-2">Email</label>
           <div className="relative mb-5">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8DA0A0]" size={18} />
-            <input className="bg-[#EAF0E8] border border-[#DCE4DC] pl-11 pr-4 py-3 w-full rounded-full focus:outline-none focus:border-[#4B6E6D] text-[#2C3E40]" value={identifier} onChange={(e) => setIdentifier(e.target.value)} />
+            <input className="bg-[#EAF0E8] border border-[#DCE4DC] pl-11 pr-4 py-3 w-full rounded-full focus:outline-none focus:border-[#4B6E6D] text-[#2C3E40]" value={identifier} onChange={(e) => setIdentifier(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
           </div>
 
           <label className="block text-sm font-semibold text-[#2C3E40] mb-2">Password</label>
           <div className="relative mb-7">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8DA0A0]" size={18} />
-            <input type="password" className="bg-[#EAF0E8] border border-[#DCE4DC] pl-11 pr-4 py-3 w-full rounded-full focus:outline-none focus:border-[#4B6E6D] text-[#2C3E40]" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <input type="password" className="bg-[#EAF0E8] border border-[#DCE4DC] pl-11 pr-4 py-3 w-full rounded-full focus:outline-none focus:border-[#4B6E6D] text-[#2C3E40]" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
           </div>
 
-          <button onClick={handleLogin} className="bg-[#4B6E6D] hover:bg-[#3A5654] text-white px-4 py-3 rounded-full w-full font-semibold transition-colors">
-            Sign in
+          <button
+            onClick={handleLogin}
+            disabled={loading}
+            className="bg-[#4B6E6D] hover:bg-[#3A5654] text-white px-4 py-3 rounded-full w-full font-semibold transition-colors disabled:opacity-60"
+          >
+            {loading ? "Signing in..." : "Sign in"}
           </button>
 
           <p className="text-center text-sm text-[#5E7473] mt-6">

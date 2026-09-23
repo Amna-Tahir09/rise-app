@@ -75,6 +75,15 @@ export default function ChatPage() {
         : [{ role: "assistant", content: "Salaam! I'm here to help you think through your habits or reflections. What's on your mind today?" }]
     );
 
+    // If the dashboard's "Rise noticed..." card sent someone here with a
+    // suggested question, drop it into the input for them to review or
+    // edit — never auto-send on their behalf.
+    const prefill = localStorage.getItem("rise_chat_prefill");
+    if (prefill) {
+      setInput(prefill);
+      localStorage.removeItem("rise_chat_prefill");
+    }
+
     const handleUpdate = () => {
       const updated = JSON.parse(localStorage.getItem("rise_chat_history") || "[]");
       setMessages(updated);
@@ -148,7 +157,11 @@ export default function ChatPage() {
       <h1 className="text-2xl sm:text-3xl font-serif text-[#1E2A32] flex items-center gap-2">
         Ask Rise <MessageCircle size={20} className="text-[#2E5E4E]" />
       </h1>
-      <p className="text-sm text-[#5A6B7A] mb-5">Talk through what&apos;s on your mind.</p>
+      <p className="text-sm text-[#5A6B7A] mb-1">Talk through what&apos;s on your mind.</p>
+      <p className="text-xs text-[#8A8478] mb-5">
+        Grounded in your own logs and public-domain classical texts — not a substitute for a
+        qualified scholar or a mental health professional.
+      </p>
 
       <div className="flex-1 bg-white border border-[#E5E0D5] rounded-3xl p-5 flex flex-col overflow-hidden">
         <div ref={scrollRef} className="flex-1 overflow-y-auto flex flex-col gap-3.5 pr-1">
