@@ -1,6 +1,36 @@
 "use client";
+// FIX: added a session check at the top. Previously every visit to "/" —
+// logged in or not — showed this full landing page, meaning an already
+// signed-in person had to click through Get Started again to reach their
+// account. Now, if a valid session (or guest flag) already exists, it
+// redirects straight to /dashboard instead. New/logged-out visitors see
+// the landing page exactly as before — nothing else in this file changed.
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
+  const router = useRouter();
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    const userId = localStorage.getItem("rise_user_id");
+    const token = localStorage.getItem("rise_access_token");
+    const isGuest = localStorage.getItem("rise_guest") === "true";
+
+    if ((userId && token) || isGuest) {
+      router.replace("/dashboard");
+    } else {
+      setChecked(true);
+    }
+  }, [router]);
+
+  // Brief blank moment while checking — avoids flashing the full landing
+  // page for a split second before redirecting an already-logged-in visitor.
+  if (!checked) {
+    return null;
+  }
+
   return (
     <>
       <div className="wrap">

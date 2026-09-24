@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Date, JSON
 from datetime import datetime
-from backend.db import Base  
+from backend.db import Base
 
 
 class User(Base):
@@ -10,7 +10,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     user_name = Column(String)
     password_hash = Column(String)
-    mode = Column(String, nullable=True)  # "habit_tracker" or "tazkiya"
+    mode = Column(String, nullable=True)  # "habit" or "tazkiya" — validated in main.py's /set-mode route
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -32,7 +32,7 @@ class HabitLog(Base):
     habit_name = Column(String)
     done = Column(Boolean, default=False)
     note = Column(String, nullable=True)
-    date = Column(Date)  # changed from DateTime — frontend always sends "YYYY-MM-DD"
+    date = Column(Date)  # frontend always sends "YYYY-MM-DD"
 
 
 class MuhasabaLog(Base):
@@ -40,7 +40,7 @@ class MuhasabaLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    log_type = Column(String, default="muhasaba")  # "muhasaba" | "nafs_check" | "tawbah"
+    log_type = Column(String, default="muhasaba")  # "muhasaba" | "nafs_check" | "tawbah" | "salah"
     reflection_text = Column(String, nullable=True)
     nafs_ratings = Column(JSON)
-    date = Column(Date)  # changed from DateTime — frontend always sends "YYYY-MM-DD"
+    date = Column(Date)  # frontend always sends "YYYY-MM-DD"

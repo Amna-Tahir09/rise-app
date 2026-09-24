@@ -8,6 +8,7 @@ from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, date
 import os
+import json
 
 from backend.db import SessionLocal
 from backend.models import User, OnboardingAnswer, HabitLog, MuhasabaLog
@@ -175,6 +176,48 @@ def save_onboarding(
     return {"user_id": data.user_id, "saved_count": len(data.answers)}
 
 
+# ---------- Onboarding: read back / delete ----------
+# Added so the frontend can check "has this user already onboarded for this
+# mode?" against real saved data, instead of a local flag that can vanish
+# (cleared browser, new device) even though the answers are safely here.
+class OnboardingAnswerOut(BaseModel):
+    id: int
+    mode: str
+    question: str
+    answer: str
+
+@app.get("/onboarding/{user_id}", response_model=list[OnboardingAnswerOut])
+def get_onboarding_answers(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized for this user")
+
+    answers = db.query(OnboardingAnswer).filter(OnboardingAnswer.user_id == user_id).all()
+    return [
+        OnboardingAnswerOut(id=a.id, mode=a.mode, question=a.question, answer=a.answer)
+        for a in answers
+    ]
+
+@app.delete("/onboarding/{answer_id}", status_code=204)
+def delete_onboarding_answer(
+    answer_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    answer = db.query(OnboardingAnswer).filter(OnboardingAnswer.id == answer_id).first()
+    if not answer:
+        raise HTTPException(status_code=404, detail="Not found")
+    if answer.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized for this entry")
+
+    db.delete(answer)
+    db.commit()
+    return None
+
+
 # ---------- Habit Log ----------
 class HabitIn(BaseModel):
     habit_name: str
@@ -226,7 +269,7 @@ def save_habit_log(
     return {"user_id": data.user_id, "date": data.date, "saved_count": len(data.habits)}
 
 
-# ---------- Reflection Log: Muhasaba / Nafs Tracker / Tawbah ----------
+# ---------- Reflection Log: Muhasaba / Nafs Tracker / Tawbah / Salah ----------
 class MuhasabaRequest(BaseModel):
     user_id: int
     date: str
@@ -234,7 +277,7 @@ class MuhasabaRequest(BaseModel):
     reflection_text: str = ""
     nafs_ratings: dict[str, int] = {}
 
-VALID_LOG_TYPES = ("muhasaba", "nafs_check", "tawbah")
+VALID_LOG_TYPES = ("muhasaba", "nafs_check", "tawbah", "salah")
 
 @app.post("/muhasaba-log", status_code=201)
 def save_muhasaba_log(
@@ -343,11 +386,68 @@ def get_dashboard(
             else:
                 break
 
+        # --- Salah: today's logged prayers ---
+        today_salah_log = db.query(MuhasabaLog).filter(
+            MuhasabaLog.user_id == user_id,
+            MuhasabaLog.log_type == "salah",
+            MuhasabaLog.date == today,
+        ).first()
+        salah_today = []
+        if today_salah_log and today_salah_log.reflection_text:
+            try:
+                salah_today = json.loads(today_salah_log.reflection_text).get("prayers", [])
+            except Exception:
+                salah_today = []
+
+        # --- Salah: last 7 days, prayer count per day, oldest to newest ---
+        # Lets the frontend notice a real change (e.g. "3/5 to 1/5 this
+        # week"), not just today's single number.
+        salah_week = []
+        for i in range(6, -1, -1):
+            day_i = today - timedelta(days=i)
+            log = db.query(MuhasabaLog).filter(
+                MuhasabaLog.user_id == user_id,
+                MuhasabaLog.log_type == "salah",
+                MuhasabaLog.date == day_i,
+            ).first()
+            count = 0
+            if log and log.reflection_text:
+                try:
+                    count = len(json.loads(log.reflection_text).get("prayers", []))
+                except Exception:
+                    count = 0
+            salah_week.append(count)
+
+        # --- Nafs: diseases rated 4-5 in the most recent check-in (today,
+        # or the last day one was actually logged, up to 3 days back) ---
+        severe_nafs = []
+        for i in range(3):
+            day_i = today - timedelta(days=i)
+            log = db.query(MuhasabaLog).filter(
+                MuhasabaLog.user_id == user_id,
+                MuhasabaLog.log_type == "nafs_check",
+                MuhasabaLog.date == day_i,
+            ).first()
+            if log and log.nafs_ratings:
+                severe_nafs = sorted(
+                    (
+                        {"key": k, "value": v}
+                        for k, v in log.nafs_ratings.items()
+                        if isinstance(v, (int, float)) and v >= 4
+                    ),
+                    key=lambda x: x["value"],
+                    reverse=True,
+                )
+                break
+
         return {
             "user_id": user_id,
             "mode": "tazkiya",
             "muhasaba_today": muhasaba_today,
             "muhasaba_streak": muhasaba_streak,
+            "salah_today": salah_today,
+            "salah_week": salah_week,
+            "severe_nafs": severe_nafs,
         }
 
     habit_names = [

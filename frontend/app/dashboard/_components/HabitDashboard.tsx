@@ -68,26 +68,46 @@ export default function HabitDashboard({
           </div>
         </div>
 
-        {goals && goals.length > 0 && (
+        {((goals && goals.length > 0) || habits.length > 0) && (
           <div className="bg-white border border-[#E5E0D5] rounded-2xl p-4 mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Target size={16} className="text-[#2E5E4E]" />
-              <p className="text-[10px] tracking-wide text-[#8A8478] uppercase">Your goals</p>
-            </div>
-            <div className="space-y-2">
-              {goals.map((g) => (
-                <div key={g.id} className="flex items-start justify-between gap-2 bg-[#F4F1EA] rounded-xl px-3 py-2">
-                  <p className="text-sm text-[#1E2A32]">{g.text}</p>
-                  <button
-                    onClick={() => onDeleteGoal?.(g.id)}
-                    className="text-[#C9C4B8] hover:text-[#E0674F] flex-shrink-0 mt-0.5 transition-colors"
-                    aria-label="Delete goal"
-                  >
-                    <X size={14} />
-                  </button>
+            {goals && goals.length > 0 && (
+              <>
+                <div className="flex items-center gap-2 mb-2">
+                  <Target size={16} className="text-[#2E5E4E]" />
+                  <p className="text-[10px] tracking-wide text-[#8A8478] uppercase">Your goals</p>
                 </div>
-              ))}
-            </div>
+                <div className="space-y-2">
+                  {goals.map((g) => (
+                    <div key={g.id} className="flex items-start justify-between gap-2 bg-[#F4F1EA] rounded-xl px-3 py-2">
+                      <p className="text-sm text-[#1E2A32]">{g.text}</p>
+                      <button
+                        onClick={() => onDeleteGoal?.(g.id)}
+                        className="text-[#C9C4B8] hover:text-[#E0674F] flex-shrink-0 mt-0.5 transition-colors"
+                        aria-label="Delete goal"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {habits.length > 0 && (
+              <div className={goals && goals.length > 0 ? "border-t border-[#F0EDE6] pt-3 mt-3" : ""}>
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckSquare size={16} className="text-[#2E5E4E]" />
+                  <p className="text-[10px] tracking-wide text-[#8A8478] uppercase">Your habits</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {habits.map((h) => (
+                    <span key={h.id} className="text-xs bg-[#F4F1EA] text-[#1E2A32] px-3 py-1.5 rounded-full">
+                      {h.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -1,7 +1,26 @@
 // Save this as: app/dashboard/habits/page.tsx
-// CHANGE: Added a short line under the header explaining that entries feed
-// Ask Rise's personalized guidance, not just a log. (Everything else
-// unchanged from your real file.)
+//
+// FIX: this page previously read its habit list from
+// localStorage.getItem("rise_habits_list") — a value that was NEVER
+// connected to the backend for reading (only saving worked). That's why
+// habits disappeared on a fresh session while the backend-computed streak
+// stayed correct. Now it loads from GET /dashboard/{user_id}, same as the
+// dashboard itself.
+//
+// KNOWN REMAINING GAP: the dashboard endpoint only returns distinct habit
+// names + today's done status — it doesn't return each habit's saved
+// "time" or "note", since that endpoint was built for streak/list display,
+// not full history. Those two fields will still reset to blank on reload
+// for now. If you want them to persist too, that needs a small new backend
+// endpoint returning full HabitLog rows, not just distinct names — happy
+// to build that next if you want it.
+//
+// ALSO FLAGGING: the Delete button below only removes a habit from the
+// current view — there's no backend "delete a habit" route yet, so it will
+// reappear on next reload (the backend still has its history). Left the
+// button in since removing it entirely felt like a bigger call to make
+// without checking with you first — but as it stands it's misleading.
+// Want a real DELETE route built for this?
 "use client";
 
 import { useState, useEffect } from "react";
@@ -18,6 +37,7 @@ const getToken = () => localStorage.getItem("rise_access_token") || "";
 export default function HabitsPage() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [todayLog, setTodayLog] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [time, setTime] = useState("");
   const [note, setNote] = useState("");
@@ -26,35 +46,41 @@ export default function HabitsPage() {
   const router = useRouter();
   const { requireAccount, GateModal } = useSignupGate();
 
-  useEffect(() => {
-    const savedHabits = JSON.parse(localStorage.getItem("rise_habits_list") || "[]");
-    const savedLog = JSON.parse(localStorage.getItem(`rise_habit_log_${todayKey()}`) || "[]");
-    setHabits(savedHabits);
-    setTodayLog(savedLog);
-  }, []);
-
-  const saveHabits = (updated: Habit[]) => {
-    setHabits(updated);
-    localStorage.setItem("rise_habits_list", JSON.stringify(updated));
+  const loadFromServer = async () => {
+    const userId = getUserId();
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/${userId}`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (!res.ok) throw new Error(`Dashboard fetch failed (${res.status})`);
+      const json = await res.json();
+      // Backend's {id, name} pairs use id === name (the cleaned habit_name)
+      setHabits((json.habits ?? []).map((h: { id: string; name: string }) => ({ id: h.id, name: h.name })));
+      setTodayLog(json.today_log ?? []);
+    } catch (err) {
+      console.error("Failed to load habits from server:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const resetForm = () => { setName(""); setTime(""); setNote(""); setEditingId(null); };
+  useEffect(() => {
+    loadFromServer();
+  }, []);
 
+  const resetForm = () => { setName(""); setTime(""); setNote(""); setEditingId(null); };
   const openNewForm = () => { resetForm(); setFormOpen(true); };
   const closeForm = () => { resetForm(); setFormOpen(false); };
 
   const handleSave = async () => {
     if (!name.trim()) return;
-    if (requireAccount()) return; // guests get the signup prompt instead of a real save
+    if (requireAccount()) return;
 
-    let updated: Habit[];
-    if (editingId) {
-      updated = habits.map((h) => (h.id === editingId ? { ...h, name, time, note } : h));
-    } else {
-      const newHabit: Habit = { id: crypto.randomUUID(), name, time, note };
-      updated = [...habits, newHabit];
-    }
-    saveHabits(updated);
+    const cleanedName = name.trim().toLowerCase();
     closeForm();
 
     try {
@@ -64,7 +90,7 @@ export default function HabitsPage() {
         body: JSON.stringify({
           user_id: getUserId(),
           date: todayKey(),
-          habits: [{ habit_name: name, done: false, note }],
+          habits: [{ habit_name: cleanedName, done: false, note }],
         }),
       });
       if (!res.ok) {
@@ -73,26 +99,31 @@ export default function HabitsPage() {
       }
     } catch (err) {
       console.error("Failed to sync habit to server:", err);
+    } finally {
+      loadFromServer();
     }
   };
 
   const handleEdit = (habit: Habit) => {
-    setEditingId(habit.id); setName(habit.name); setTime(habit.time || ""); setNote(habit.note || "");
+    setEditingId(habit.id);
+    setName(habit.name);
+    setTime(habit.time || "");
+    setNote(habit.note || "");
     setFormOpen(true);
   };
 
+  // See the file-header note above — this is view-only, not a real delete.
   const handleDelete = (id: string) => {
-    saveHabits(habits.filter((h) => h.id !== id));
+    setHabits((prev) => prev.filter((h) => h.id !== id));
     if (editingId === id) closeForm();
   };
 
   const toggleDone = async (habitId: string, habitName: string) => {
-    if (requireAccount()) return; // guests get the signup prompt instead of a real save
+    if (requireAccount()) return;
 
     const isDone = todayLog.includes(habitId);
     const updated = isDone ? todayLog.filter((id) => id !== habitId) : [...todayLog, habitId];
     setTodayLog(updated);
-    localStorage.setItem(`rise_habit_log_${todayKey()}`, JSON.stringify(updated));
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/habit-log`, {
@@ -110,10 +141,16 @@ export default function HabitsPage() {
       }
     } catch (err) {
       console.error("Failed to sync habit-log to server:", err);
+    } finally {
+      loadFromServer();
     }
   };
 
   const doneCount = habits.filter((h) => todayLog.includes(h.id)).length;
+
+  if (loading) {
+    return <div className="p-8 text-[#8A8478] text-sm">Loading your habits...</div>;
+  }
 
   return (
     <div className="relative min-h-full">
@@ -131,7 +168,7 @@ export default function HabitsPage() {
         <ArrowLeft size={14} /> Back to dashboard
       </button>
 
-      <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-serif text-[#1E2A32] flex items-center gap-2">
             Habits Tracker <SquareCheck size={24} className="text-[#2E5E4E]" />
@@ -143,11 +180,6 @@ export default function HabitsPage() {
         </button>
       </div>
 
-      <p className="text-xs text-[#8A8478] mb-6 max-w-md">
-        Every entry helps Ask Rise recognize your real patterns and give grounded
-        guidance — not just track a log.
-      </p>
-
       {formOpen && (
         <div className="bg-white border-2 border-[#2E5E4E] rounded-2xl p-6 mb-5">
           <div className="flex items-center justify-between mb-4">
@@ -158,7 +190,7 @@ export default function HabitsPage() {
           </div>
           <label className="block text-xs font-semibold text-[#5A6B7A] mb-1.5">Name</label>
           <input id="habit-name-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Morning walk" className="w-full bg-[#F4F1EA] border border-[#E5E0D5] px-3.5 py-2.5 rounded-xl text-sm mb-3.5 focus:outline-none focus:border-[#2E5E4E]" />
-          <label className="block text-xs font-semibold text-[#5A6B7A] mb-1.5">Time (optional)</label>
+          <label className="block text-xs font-semibold text-[#5A6B7A] mb-1.5">Time (optional — not yet saved to your account)</label>
           <input value={time} onChange={(e) => setTime(e.target.value)} placeholder="e.g. 7:00 AM" className="w-full bg-[#F4F1EA] border border-[#E5E0D5] px-3.5 py-2.5 rounded-xl text-sm mb-3.5 focus:outline-none focus:border-[#2E5E4E]" />
           <label className="block text-xs font-semibold text-[#5A6B7A] mb-1.5">Note (optional)</label>
           <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. 20 minutes minimum" className="w-full bg-[#F4F1EA] border border-[#E5E0D5] px-3.5 py-2.5 rounded-xl text-sm mb-4 focus:outline-none focus:border-[#2E5E4E]" />

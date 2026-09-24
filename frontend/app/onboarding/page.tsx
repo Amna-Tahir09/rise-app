@@ -110,17 +110,9 @@ export default function OnboardingPage() {
       return;
     }
     const payload = questions.map((q, i) => ({ question: q.question, answer: answers[i] }));
-    // Mode-specific key — so onboarding for one mode never overwrites the
-    // other mode's saved goal/answers.
-    localStorage.setItem(`rise_onboarding_${mode}`, JSON.stringify(payload));
-
-    // The first question's answer is treated as "the goal" — appended to a
-    // growing list (never overwritten), so every goal ever entered stays
-    // visible on the dashboard, each with its own delete button.
-    const goalsKey = `rise_goals_${mode}`;
-    const existingGoals = JSON.parse(localStorage.getItem(goalsKey) || "[]");
-    const newGoal = { id: crypto.randomUUID(), text: answers[0] };
-    localStorage.setItem(goalsKey, JSON.stringify([...existingGoals, newGoal]));
+    // This is submitted to the real backend below (POST /onboarding),
+    // which is what the dashboard now reads goals back from — no local
+    // copy needed here anymore.
 
     setSubmitting(true);
 

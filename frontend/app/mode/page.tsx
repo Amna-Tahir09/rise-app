@@ -1,3 +1,12 @@
+// Save this as: app/mode/page.tsx
+//
+// FIX: the onboarding-skip check used to read a local flag
+// (rise_onboarding_done_${mode}) that had nothing to do with whether
+// onboarding answers actually exist. If that flag was ever lost — cleared
+// browser, new device, anything — the app forgot you'd already onboarded,
+// even though your real answers were safely sitting in the backend the
+// whole time. Now it asks the backend directly (GET /onboarding/{user_id},
+// filtered to this mode) before deciding.
 "use client";
 
 import { useState } from "react";
@@ -6,10 +15,12 @@ import { Sprout, Moon } from "lucide-react";
 
 export default function ModePage() {
   const [mode, setMode] = useState("habit");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleContinue = async () => {
     localStorage.setItem("rise_mode", mode);
+    setLoading(true);
 
     const userId = localStorage.getItem("rise_user_id") || "";
     const token = localStorage.getItem("rise_access_token") || "";
@@ -22,18 +33,27 @@ export default function ModePage() {
       });
     } catch (err) {
       console.error("Failed to sync mode to server:", err);
-    } finally {
-      // Only send them through onboarding the FIRST time they pick this
-      // specific mode. If they've already completed onboarding for it
-      // before (habit or tazkiya), skip straight to the dashboard.
-      const alreadyOnboarded = localStorage.getItem(`rise_onboarding_done_${mode}`) === "true";
-      router.replace(alreadyOnboarded ? "/dashboard" : "/onboarding");
     }
+
+    let alreadyOnboarded = false;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/onboarding/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const answers: { mode: string }[] = await res.json();
+        alreadyOnboarded = answers.some((a) => a.mode === mode);
+      }
+    } catch (err) {
+      console.error("Failed to check onboarding status:", err);
+    }
+
+    setLoading(false);
+    router.replace(alreadyOnboarded ? "/dashboard" : "/onboarding");
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#F9F7F4]">
-      {/* Background photo layer */}
       <div
         className="fixed inset-0 z-0"
         style={{
@@ -88,8 +108,12 @@ export default function ModePage() {
             </button>
           </div>
 
-          <button onClick={handleContinue} className="bg-[#2E5E4E] hover:bg-[#254D40] text-white px-4 py-3 rounded-full w-full font-semibold transition-colors">
-            Continue
+          <button
+            onClick={handleContinue}
+            disabled={loading}
+            className="bg-[#2E5E4E] hover:bg-[#254D40] text-white px-4 py-3 rounded-full w-full font-semibold transition-colors disabled:opacity-60"
+          >
+            {loading ? "Checking..." : "Continue"}
           </button>
         </div>
       </div>
