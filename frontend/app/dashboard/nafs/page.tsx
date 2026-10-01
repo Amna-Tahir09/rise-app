@@ -53,8 +53,7 @@ export default function NafsPage() {
   const handleTalkItThrough = () => {
     if (!highlight) return;
     const label = DISEASES.find((d) => d.key === highlight.key)?.name || highlight.key;
-    localStorage.setItem("rise_chat_prefill", `I rated ${label} high today — can you help me understand and work on it?`);
-    router.push("/dashboard/chat");
+    router.push(`/dashboard/chat?q=${encodeURIComponent(`I rated ${label} high today — can you help me understand and work on it?`)}`);
   };
 
   const setRating = (key: string, value: number) => {

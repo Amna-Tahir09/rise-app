@@ -7,11 +7,12 @@ from sqlalchemy import or_
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, date
+from typing import Optional
 import os
 import json
 
 from backend.db import SessionLocal
-from backend.models import User, OnboardingAnswer, HabitLog, MuhasabaLog
+from backend.models import User, OnboardingAnswer, HabitLog, MuhasabaLog, ChatSession, ChatMessage
 from backend.rag_pipeline import answer_question
 from backend.pinecone_store import store_log
 
@@ -293,13 +294,29 @@ def save_muhasaba_log(
 
     log_date = parse_date(data.date)
 
-    db.add(MuhasabaLog(
-        user_id=data.user_id,
-        date=log_date,
-        log_type=data.log_type,
-        reflection_text=data.reflection_text,
-        nafs_ratings=data.nafs_ratings
-    ))
+    # FIX: this used to always insert a new row, even when one already
+    # existed for this user/log_type/date. For salah specifically — toggled
+    # multiple times per day — that meant every tap created another row,
+    # and the dashboard's .first() query kept returning the OLDEST one for
+    # today, not the latest. Same upsert pattern save_habit_log already
+    # used correctly.
+    existing = db.query(MuhasabaLog).filter(
+        MuhasabaLog.user_id == data.user_id,
+        MuhasabaLog.log_type == data.log_type,
+        MuhasabaLog.date == log_date,
+    ).first()
+
+    if existing:
+        existing.reflection_text = data.reflection_text
+        existing.nafs_ratings = data.nafs_ratings
+    else:
+        db.add(MuhasabaLog(
+            user_id=data.user_id,
+            date=log_date,
+            log_type=data.log_type,
+            reflection_text=data.reflection_text,
+            nafs_ratings=data.nafs_ratings
+        ))
 
     text_to_embed = f"[{data.log_type}] On {data.date}, reflection: {data.reflection_text}. Nafs ratings: {data.nafs_ratings}"
     store_log(user_id=data.user_id, mode=current_user.mode, text=text_to_embed, log_type=data.log_type)
@@ -308,10 +325,150 @@ def save_muhasaba_log(
     return {"user_id": data.user_id, "date": data.date, "log_type": data.log_type, "status": "saved"}
 
 
+# ---------- Habit: real delete ----------
+# Previously the frontend's Delete button only removed a habit from the
+# current screen — nothing backend-side, so it reappeared on next reload
+# since all its HabitLog history was still there. This removes it for real.
+@app.delete("/habit/{habit_name}", status_code=204)
+def delete_habit(
+    habit_name: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    cleaned_name = habit_name.strip().lower()
+    db.query(HabitLog).filter(
+        HabitLog.user_id == current_user.id,
+        HabitLog.habit_name == cleaned_name,
+    ).delete()
+    db.commit()
+    return None
+
+
+# ---------- Reflection history ----------
+# Returns a user's past entries for one log type (muhasaba by default),
+# newest first. The Muhasaba page uses this both to show past reflections
+# and to reload today's answers — no browser storage involved.
+@app.get("/muhasaba-log/{user_id}")
+def get_muhasaba_history(
+    user_id: int,
+    log_type: str = "muhasaba",
+    limit: int = 60,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized for this user")
+    if log_type not in VALID_LOG_TYPES:
+        raise HTTPException(status_code=422, detail=f"Invalid log_type. Must be one of {VALID_LOG_TYPES}")
+
+    rows = (
+        db.query(MuhasabaLog)
+        .filter(MuhasabaLog.user_id == user_id, MuhasabaLog.log_type == log_type)
+        .order_by(MuhasabaLog.date.desc(), MuhasabaLog.id.desc())
+        .limit(min(max(limit, 1), 365))
+        .all()
+    )
+    return [
+        {
+            "id": r.id,
+            "date": r.date.isoformat() if r.date else None,
+            "log_type": r.log_type,
+            "reflection_text": r.reflection_text,
+            "nafs_ratings": r.nafs_ratings,
+        }
+        for r in rows
+    ]
+
+
 # ---------- Chat ----------
+# Conversations are now saved as sessions with messages in the database,
+# so past chats can be reopened on any device. Each day starts a fresh
+# chat automatically; "New chat" can also start one any time.
 class ChatRequest(BaseModel):
     user_id: int
     question: str
+    session_id: Optional[int] = None
+    date: Optional[str] = None  # user's local date, YYYY-MM-DD
+
+
+class NewSessionRequest(BaseModel):
+    date: Optional[str] = None
+
+
+def _chat_day(date_str: Optional[str]) -> date:
+    return parse_date(date_str) if date_str else date.today()
+
+
+def _owned_session(db: Session, session_id: int, user_id: int) -> ChatSession:
+    session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+    if not session or session.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    return session
+
+
+@app.get("/chat/sessions")
+def list_chat_sessions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    sessions = (
+        db.query(ChatSession)
+        .filter(ChatSession.user_id == current_user.id)
+        .order_by(ChatSession.date.desc(), ChatSession.id.desc())
+        .limit(100)
+        .all()
+    )
+    return [
+        {
+            "id": s.id,
+            "title": s.title,
+            "date": s.date.isoformat() if s.date else None,
+        }
+        for s in sessions
+    ]
+
+
+@app.post("/chat/sessions", status_code=201)
+def create_chat_session(
+    data: NewSessionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    session = ChatSession(user_id=current_user.id, date=_chat_day(data.date))
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+    return {"id": session.id, "title": session.title, "date": session.date.isoformat()}
+
+
+@app.get("/chat/sessions/{session_id}/messages")
+def get_chat_messages(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    _owned_session(db, session_id, current_user.id)
+    messages = (
+        db.query(ChatMessage)
+        .filter(ChatMessage.session_id == session_id)
+        .order_by(ChatMessage.id.asc())
+        .all()
+    )
+    return [{"role": m.role, "content": m.content} for m in messages]
+
+
+@app.delete("/chat/sessions/{session_id}", status_code=204)
+def delete_chat_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    session = _owned_session(db, session_id, current_user.id)
+    db.query(ChatMessage).filter(ChatMessage.session_id == session_id).delete()
+    db.delete(session)
+    db.commit()
+    return None
+
 
 @app.post("/chat")
 def chat(
@@ -322,32 +479,57 @@ def chat(
     if current_user.id != data.user_id:
         raise HTTPException(status_code=403, detail="Not authorized for this user")
 
+    day = _chat_day(data.date)
+
+    # Use the chat the user is in; otherwise today's latest chat;
+    # otherwise start today's chat.
+    if data.session_id:
+        session = _owned_session(db, data.session_id, current_user.id)
+    else:
+        session = (
+            db.query(ChatSession)
+            .filter(ChatSession.user_id == current_user.id, ChatSession.date == day)
+            .order_by(ChatSession.id.desc())
+            .first()
+        )
+        if not session:
+            session = ChatSession(user_id=current_user.id, date=day)
+            db.add(session)
+            db.flush()
+
     try:
         answer = answer_question(
             user_id=data.user_id,
             mode=current_user.mode,
             question=data.question
         )
-
-        # Save this exchange so future questions can reference what was
-        # actually discussed here — without this, chat has no memory of
-        # its own past conversations, only onboarding/habit/reflection logs.
-        text_to_embed = f"User asked: {data.question} | Rise replied: {answer}"
-        store_log(
-            user_id=data.user_id,
-            mode=current_user.mode,
-            text=text_to_embed,
-            log_type="chat_history"
-        )
-
-        return {"answer": answer, "sources_used": 1}
     except Exception as e:
         import traceback
         traceback.print_exc()
+        db.rollback()
         raise HTTPException(
             status_code=500,
             detail=f"Could not generate an answer. Please try again. ({str(e)})"
         )
+
+    if not session.title:
+        session.title = data.question.strip()[:60]
+    db.add(ChatMessage(session_id=session.id, role="user", content=data.question))
+    db.add(ChatMessage(session_id=session.id, role="assistant", content=answer))
+    db.commit()
+
+    # Also embed the exchange so future answers can draw on past conversations
+    try:
+        store_log(
+            user_id=data.user_id,
+            mode=current_user.mode,
+            text=f"User asked: {data.question} | Rise replied: {answer}",
+            log_type="chat_history"
+        )
+    except Exception:
+        pass
+
+    return {"answer": answer, "session_id": session.id, "sources_used": 1}
 
 
 # ---------- Dashboard ----------
@@ -372,9 +554,11 @@ def get_dashboard(
         muhasaba_streak = 0
         day = today
         while True:
+            # Any of the three Tazkiya practices counts as showing up
+            # for the day — muhasaba, a nafs check-in, or tawbah.
             exists = db.query(MuhasabaLog).filter(
                 MuhasabaLog.user_id == user_id,
-                MuhasabaLog.log_type == "muhasaba",
+                MuhasabaLog.log_type.in_(("muhasaba", "nafs_check", "tawbah")),
                 MuhasabaLog.date == day,
             ).first() is not None
             if exists:

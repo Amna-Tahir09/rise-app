@@ -1,7 +1,23 @@
+// Save this as: app/dashboard/_components/HabitDashboard.tsx
+//
+// REDESIGN: "The vine." Replaces the stack of stat boxes, progress ring,
+// bar chart and checklist with one living vine, borrowed from the landing
+// page's own vine doodle. Each day you showed up grows a leaf; missed days
+// stay as small buds (waiting, not broken). Same props and same backend
+// data as before (week_rates, today_log, habits, best_streak, insight,
+// goals), so dashboard/page.tsx needs no changes.
 "use client";
 
 import Link from "next/link";
-import { Flame, CheckSquare, Clock, CheckCircle2, Target, Sparkles, X } from "lucide-react";
+import { Caveat, Playfair_Display, Inter } from "next/font/google";
+import { Leaf, Sprout, X, Flame, CheckCircle2, Clock, Target } from "lucide-react";
+
+const caveat = Caveat({ subsets: ["latin"], weight: ["500", "600"] });
+// Three-font system, matching the landing page:
+// Playfair Display for headings and numbers, Inter for body text,
+// Caveat only for personal, handwritten moments.
+const playfair = Playfair_Display({ subsets: ["latin"], weight: ["500", "600"] });
+const inter = Inter({ subsets: ["latin"], weight: ["400", "500"] });
 
 type DashboardData = {
   best_streak?: number;
@@ -12,7 +28,18 @@ type DashboardData = {
   insight?: string | null;
 };
 
-const DAY_LABELS = ["6d", "5d", "4d", "3d", "2d", "Yest", "Today"];
+// Fixed points along the vine path, one per day (oldest to today)
+const VINE_POINTS = [
+  { x: 45, y: 46, r: -35 },
+  { x: 125, y: 58, r: 30 },
+  { x: 205, y: 66, r: -30 },
+  { x: 285, y: 40, r: -30 },
+  { x: 365, y: 32, r: 25 },
+  { x: 445, y: 46, r: -25 },
+  { x: 525, y: 56, r: -20 },
+];
+
+const DAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
 
 export default function HabitDashboard({
   data,
@@ -31,186 +58,229 @@ export default function HabitDashboard({
 }) {
   const habits = data.habits ?? [];
   const todayLog = data.today_log ?? [];
-  const pending = Math.max(habits.length - todayLog.length, 0);
-  const todayRate = data.today_rate ?? (habits.length ? Math.round((todayLog.length / habits.length) * 100) : 0);
-  const weekRates = data.week_rates ?? [0, 0, 0, 0, 0, 0, todayRate];
+  const weekRates = data.week_rates ?? [0, 0, 0, 0, 0, 0, 0];
+  const name = greetingName.replace(/^,\s*/, "");
+  const leavesThisWeek = weekRates.filter((r) => r > 0).length;
+  const doneToday = habits.filter((h) => todayLog.includes(h.id)).length;
+  const pendingToday = Math.max(habits.length - doneToday, 0);
+  const todayRate = data.today_rate ?? 0;
 
-  const radius = 52;
-  const circumference = 2 * Math.PI * radius;
-  const dashOffset = circumference - (todayRate / 100) * circumference;
+  const ringRadius = 44;
+  const ringCircumference = 2 * Math.PI * ringRadius;
+  const ringOffset = ringCircumference - (todayRate / 100) * ringCircumference;
+
+  const dayLabels = VINE_POINTS.map((_, i) => {
+    if (i === 6) return "today";
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    return DAY_LETTERS[d.getDay()];
+  });
+
+  const vineLine =
+    leavesThisWeek === 0
+      ? "A fresh week — Let's plant the first leaf"
+      : `The vine grew ${leavesThisWeek} ${leavesThisWeek === 1 ? "time" : "times"} this week`;
 
   return (
-    <div className="p-6 sm:p-10 relative min-h-full">
+    <div className={`${inter.className} p-6 sm:p-10 relative min-h-full`}>
       <div
         className="fixed inset-0 pointer-events-none z-0"
         style={{
           backgroundImage: "url('/rise-landing-bg.png')",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          opacity: 0.7,
+          opacity: 0.35,
         }}
       />
-      <div className="relative z-10">
-        <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl px-4 py-3">
-            <h1 className="text-3xl sm:text-4xl font-serif text-[#1E2A32]">Welcome back{greetingName}</h1>
-            <p className="text-sm text-[#1E2A32] mt-1">{today}</p>
+
+      <div className="relative z-10 max-w-3xl">
+        {/* Greeting + two small, quiet stats */}
+        <div className="flex items-end justify-between flex-wrap gap-3 mb-5">
+          <div>
+            <p className={`${caveat.className} text-3xl sm:text-4xl text-[#2C3E40] leading-none`}>
+              {name ? `Hi ${name},` : "Hi there,"}
+            </p>
+            <p className="text-sm text-[#5A6B7A] mt-1">{today}</p>
           </div>
-          <div className="flex gap-3">
-            <div className="bg-white border border-[#E5E0D5] rounded-2xl px-5 py-3 text-center">
-              <p className="text-[10px] tracking-wide text-[#8A8478]">STREAK</p>
-              <p className="text-lg font-serif text-[#2E5E4E]">{data.best_streak ?? 0} Days</p>
-            </div>
-            <div className="bg-white border border-[#E5E0D5] rounded-2xl px-5 py-3 text-center">
-              <p className="text-[10px] tracking-wide text-[#8A8478]">TODAY</p>
-              <p className="text-lg font-serif text-[#1E2A32]">{todayRate}%</p>
-            </div>
+          <div className="flex gap-2">
+            <span className="flex items-center gap-1.5 bg-white/80 text-[#2E5E4E] text-xs font-medium px-3 py-1.5 rounded-full">
+              <Flame size={13} className="text-[#E8B84B]" /> {data.best_streak ?? 0} day streak
+            </span>
+            <span className="bg-white/80 text-[#2C3E40] text-xs font-medium px-3 py-1.5 rounded-full">
+              {data.today_rate ?? 0}% today
+            </span>
           </div>
         </div>
 
-        {((goals && goals.length > 0) || habits.length > 0) && (
-          <div className="bg-white border border-[#E5E0D5] rounded-2xl p-4 mb-4">
-            {goals && goals.length > 0 && (
-              <>
-                <div className="flex items-center gap-2 mb-2">
-                  <Target size={16} className="text-[#2E5E4E]" />
-                  <p className="text-[10px] tracking-wide text-[#8A8478] uppercase">Your goals</p>
-                </div>
-                <div className="space-y-2">
-                  {goals.map((g) => (
-                    <div key={g.id} className="flex items-start justify-between gap-2 bg-[#F4F1EA] rounded-xl px-3 py-2">
-                      <p className="text-sm text-[#1E2A32]">{g.text}</p>
-                      <button
-                        onClick={() => onDeleteGoal?.(g.id)}
-                        className="text-[#C9C4B8] hover:text-[#E0674F] flex-shrink-0 mt-0.5 transition-colors"
-                        aria-label="Delete goal"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+        {/* The vine */}
+        <div className="bg-[#FAF7F0] rounded-3xl p-5 sm:p-6 mb-4">
+          <p className={`${caveat.className} text-2xl text-[#2C3E40] leading-tight`}>{vineLine}</p>
 
-            {habits.length > 0 && (
-              <div className={goals && goals.length > 0 ? "border-t border-[#F0EDE6] pt-3 mt-3" : ""}>
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckSquare size={16} className="text-[#2E5E4E]" />
-                  <p className="text-[10px] tracking-wide text-[#8A8478] uppercase">Your habits</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {habits.map((h) => (
-                    <span key={h.id} className="text-xs bg-[#F4F1EA] text-[#1E2A32] px-3 py-1.5 rounded-full">
-                      {h.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
+          <svg viewBox="0 0 600 100" className="w-full block my-1" role="img" aria-label={`Vine with ${leavesThisWeek} leaves this week`}>
+            <path
+              d="M10 62 C 90 25, 170 88, 250 52 S 410 22, 490 56 S 570 72, 592 44"
+              fill="none"
+              stroke="#5C8A78"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            />
+            {VINE_POINTS.map((p, i) =>
+              weekRates[i] > 0 ? (
+                <ellipse key={i} cx={p.x} cy={p.y} rx="11" ry="6" fill="#5C8A78" transform={`rotate(${p.r} ${p.x} ${p.y})`} />
+              ) : (
+                <circle key={i} cx={p.x} cy={p.y} r="4" fill="none" stroke="#B5A07A" strokeWidth="1.6" />
+              )
             )}
-          </div>
-        )}
+            <circle cx={VINE_POINTS[6].x} cy={VINE_POINTS[6].y} r="17" fill="none" stroke="#E8C77A" strokeWidth="1.5" strokeDasharray="3 3" />
+            {VINE_POINTS.map((p, i) => (
+              <text key={i} x={p.x} y="95" fontSize="11" fill="#8A8478" textAnchor="middle">
+                {dayLabels[i]}
+              </text>
+            ))}
+          </svg>
 
-        {/* "Rise noticed..." — a quiet, automatic observation from the same
-            data below, so the log feels like it's being read, not just
-            stored. Only renders once there's enough real history to say
-            something true. */}
+          <p className="text-xs text-[#8A8478] mb-4">
+            Missed days stay as little buds, not dead leaves. They&apos;re waiting, not broken.
+          </p>
+
+          {habits.length === 0 ? (
+            <Link
+              href="/dashboard/habits"
+              className="inline-flex items-center gap-2 text-sm font-medium text-[#2E5E4E] bg-[#DDE9E1] px-4 py-2 rounded-full"
+            >
+              <Sprout size={15} /> Plant your first habit
+            </Link>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              {habits.map((h) => {
+                const done = todayLog.includes(h.id);
+                return (
+                  <button
+                    key={h.id}
+                    type="button"
+                    onClick={() => onToggleHabit?.(h.id, h.name)}
+                    className={`inline-flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-full transition-colors ${
+                      done ? "bg-[#DDE9E1] text-[#2E5E4E]" : "bg-[#F1ECE1] text-[#5E7473] hover:bg-[#E8E0CE]"
+                    }`}
+                  >
+                    <Leaf size={14} /> {h.name}
+                  </button>
+                );
+              })}
+              <span className="text-xs text-[#8A8478] ml-1">
+                {doneToday} of {habits.length} today
+              </span>
+              <Link href="/dashboard/habits" className="text-xs font-medium text-[#2E5E4E] ml-auto">
+                Tend your habits →
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* "Rise noticed" as a sticky note, same style as the landing page */}
         {data.insight && (
-          <div className="bg-[#FBF3E0] border border-[#E8B84B]/40 rounded-2xl p-4 mb-6 flex items-start gap-3">
-            <Sparkles size={16} className="text-[#C99A2E] mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-[10px] tracking-wide text-[#8A6D2F] uppercase mb-0.5">Rise noticed</p>
-              <p className="text-sm text-[#4A4536]">{data.insight}</p>
+          <div className="flex justify-end mb-6">
+            <div
+              className={`${caveat.className} bg-[#FBF0C8] text-[#4A5548] text-xl leading-snug px-4 py-3 rounded-md max-w-xs shadow-[0_6px_14px_rgba(0,0,0,0.10)]`}
+              style={{ transform: "rotate(2deg)" }}
+            >
+              {data.insight}
             </div>
           </div>
         )}
 
-        <div className="bg-[#2E5E4E] rounded-2xl p-6 mb-6">
-          <p className="text-xs text-[#B7D4C6] mb-2">Keep going</p>
-          <p className="text-lg font-serif italic text-white">Small steps, done consistently, build the life you want.</p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white border border-[#E5E0D5] rounded-2xl p-5">
-            <CheckCircle2 size={18} className="text-[#2E5E4E] mb-2" />
-            <div className="text-2xl font-serif text-[#1E2A32]">{todayLog.length}</div>
-            <div className="text-xs text-[#5A6B7A] mt-1">Completed Today</div>
+        {/* A closer look — stat tiles, today's ring, and the week's graph */}
+        <h2 className={`${playfair.className} text-xl text-[#2C3E40] mb-3`}>A closer look</h2>
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-white/80 rounded-2xl p-4">
+            <CheckCircle2 size={16} className="text-[#5C8A78] mb-1.5" />
+            <p className={`text-2xl ${playfair.className} text-[#2C3E40] leading-none`}>{doneToday}</p>
+            <p className="text-xs text-[#8A8478] mt-1">done today</p>
           </div>
-          <div className="bg-white border border-[#E5E0D5] rounded-2xl p-5">
-            <Clock size={18} className="text-[#5A6B7A] mb-2" />
-            <div className="text-2xl font-serif text-[#1E2A32]">{pending}</div>
-            <div className="text-xs text-[#5A6B7A] mt-1">Pending Today</div>
+          <div className="bg-white/80 rounded-2xl p-4">
+            <Clock size={16} className="text-[#B5A07A] mb-1.5" />
+            <p className={`text-2xl ${playfair.className} text-[#2C3E40] leading-none`}>{pendingToday}</p>
+            <p className="text-xs text-[#8A8478] mt-1">still waiting</p>
           </div>
-          <div className="bg-white border border-[#E5E0D5] rounded-2xl p-5">
-            <Flame size={18} className="text-[#E8B84B] mb-2" />
-            <div className="text-2xl font-serif text-[#1E2A32]">{data.best_streak ?? 0}</div>
-            <div className="text-xs text-[#5A6B7A] mt-1">Best Streak</div>
+          <div className="bg-white/80 rounded-2xl p-4">
+            <Flame size={16} className="text-[#E8B84B] mb-1.5" />
+            <p className={`text-2xl ${playfair.className} text-[#2C3E40] leading-none`}>{data.best_streak ?? 0}</p>
+            <p className="text-xs text-[#8A8478] mt-1">day streak</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div className="bg-white border border-[#E5E0D5] rounded-2xl p-6 flex items-center justify-center">
-            <div className="relative w-32 h-32">
-              <svg viewBox="0 0 120 120" className="w-32 h-32 -rotate-90">
-                <circle cx="60" cy="60" r={radius} fill="none" stroke="#E5E0D5" strokeWidth="10" />
+        <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3 mb-4">
+          <div className="bg-white/80 rounded-3xl p-5 flex flex-col items-center justify-center">
+            <div className="relative w-28 h-28">
+              <svg viewBox="0 0 100 100" className="w-28 h-28 -rotate-90">
+                <circle cx="50" cy="50" r={ringRadius} fill="none" stroke="#EDE7DA" strokeWidth="8" />
                 <circle
-                  cx="60" cy="60" r={radius} fill="none" stroke="#2E5E4E" strokeWidth="10"
-                  strokeDasharray={circumference} strokeDashoffset={dashOffset} strokeLinecap="round"
+                  cx="50"
+                  cy="50"
+                  r={ringRadius}
+                  fill="none"
+                  stroke="#5C8A78"
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  strokeDasharray={ringCircumference}
+                  strokeDashoffset={ringOffset}
+                  style={{ transition: "stroke-dashoffset 0.5s" }}
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-serif text-[#1E2A32]">{todayRate}%</span>
-                <span className="text-xs text-[#8A8478]">today</span>
+                <span className={`text-2xl ${playfair.className} text-[#2C3E40]`}>{todayRate}%</span>
               </div>
             </div>
+            <p className={`${caveat.className} text-lg text-[#5E7473] mt-1`}>
+              {todayRate === 100 ? "all done today!" : todayRate === 0 ? "the day's still open" : "getting there"}
+            </p>
           </div>
-          <div className="bg-white border border-[#E5E0D5] rounded-2xl p-6">
-            <p className="text-sm font-semibold text-[#1E2A32] mb-4">Last 7 Days</p>
+
+          <div className="bg-white/80 rounded-3xl p-5">
+            <p className={`${playfair.className} text-base text-[#2C3E40] mb-3`}>Your last 7 days</p>
             <div className="flex items-end justify-between gap-2 h-28">
               {weekRates.map((rate, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
+                <div key={i} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+                  <span className="text-[10px] text-[#8A8478]">{rate > 0 ? `${rate}%` : ""}</span>
                   <div
-                    className={`w-full rounded-md ${i === weekRates.length - 1 ? "bg-[#2E5E4E]" : "bg-[#E5E0D5]"}`}
-                    style={{ height: `${Math.max(rate, 4)}%` }}
+                    className={`w-full rounded-full ${i === 6 ? "bg-[#5C8A78]" : rate > 0 ? "bg-[#A9C4B6]" : "bg-[#EDE7DA]"}`}
+                    style={{ height: `${Math.max(rate, 6)}%`, transition: "height 0.4s" }}
                   />
-                  <span className="text-[10px] text-[#8A8478]">{DAY_LABELS[i] ?? ""}</span>
+                  <span className="text-[10px] text-[#8A8478]">{dayLabels[i]}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="bg-white border-2 border-[#2E5E4E] rounded-2xl p-6">
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-sm font-semibold text-[#1E2A32] flex items-center gap-2">
-              <CheckSquare size={16} className="text-[#2E5E4E]" /> Today&apos;s Habits
-            </p>
-            <Link href="/dashboard/habits" className="text-xs font-semibold text-[#2E5E4E]">Manage habits →</Link>
-          </div>
-          {habits.length === 0 ? (
-            <div className="text-center py-8 text-[#8A8478]">
-              <p className="text-sm mb-3">No habits yet</p>
-              <Link href="/dashboard/habits" className="text-sm font-semibold text-[#2E5E4E]">Add your first habit</Link>
+        {/* Goals from onboarding — small and warm, not a system box */}
+        {goals && goals.length > 0 && (
+          <div className="bg-white/80 rounded-3xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-7 h-7 rounded-full bg-[#DDE9E1] flex items-center justify-center">
+                <Target size={15} className="text-[#2E5E4E]" />
+              </span>
+              <div>
+                <p className={`${playfair.className} text-base text-[#2C3E40] leading-tight`}>Your focus</p>
+                <p className="text-[11px] text-[#8A8478]">still working toward</p>
+              </div>
             </div>
-          ) : (
-            habits.map((h) => {
-              const isDone = todayLog.includes(h.id);
-              return (
-                <button
-                  key={h.id}
-                  type="button"
-                  onClick={() => onToggleHabit?.(h.id, h.name)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border mb-2 text-left transition-colors ${
-                    isDone ? "border-[#2E5E4E] bg-[#2E5E4E]/5" : "border-[#E5E0D5] hover:border-[#2E5E4E]/40"
-                  }`}
-                >
-                  <div className={`w-4.5 h-4.5 rounded-md border-2 flex-shrink-0 ${isDone ? "bg-[#2E5E4E] border-[#2E5E4E]" : "border-[#C9C4B8]"}`} />
-                  <span className="text-sm text-[#1E2A32]">{h.name}</span>
-                </button>
-              );
-            })
-          )}
-        </div>
+            <div className="space-y-2">
+              {goals.map((g) => (
+                <div key={g.id} className="flex items-start justify-between gap-3">
+                  <p className="text-sm text-[#1E2A32]">{g.text}</p>
+                  <button
+                    onClick={() => onDeleteGoal?.(g.id)}
+                    className="text-[#C9C4B8] hover:text-[#E0674F] flex-shrink-0 mt-0.5 transition-colors"
+                    aria-label="Remove goal"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

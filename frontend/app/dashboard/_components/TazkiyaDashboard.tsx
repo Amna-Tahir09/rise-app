@@ -1,16 +1,27 @@
+// Save this as: app/dashboard/_components/TazkiyaDashboard.tsx
+//
+// REDESIGN: "The night sky." Salah becomes the moon filling up through the
+// day (Fajr a thin crescent, Isha the full moon). Reflection streak shows
+// as stars, one per night. A high nafs rating is named gently as a cloud,
+// with a way to talk it through, instead of a red alert box. Same props
+// and same backend data as before (salah_today, muhasaba_streak,
+// severe_nafs, insight, goals), so dashboard/page.tsx needs no changes.
+//
+// Also removed: this component used to render its own floating chat
+// button, duplicating the one already in dashboard/layout.tsx.
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Flame, Moon, Activity, Shield, MessageCircle, CheckCircle2, Target, Sparkles, X } from "lucide-react";
+import { Caveat, Playfair_Display, Inter } from "next/font/google";
+import { Cloud, Activity, Shield, MessageCircle, X, Target, ArrowRight } from "lucide-react";
 
-const SALAH = [
-  { key: "fajr", label: "Fajr" },
-  { key: "dhuhr", label: "Dhuhr" },
-  { key: "asr", label: "Asr" },
-  { key: "maghrib", label: "Maghrib" },
-  { key: "isha", label: "Isha" },
-];
+const caveat = Caveat({ subsets: ["latin"], weight: ["500", "600"] });
+// Three-font system, matching the landing page:
+// Playfair Display for headings and numbers, Inter for body text,
+// Caveat only for personal, handwritten moments.
+const playfair = Playfair_Display({ subsets: ["latin"], weight: ["500", "600"] });
+const inter = Inter({ subsets: ["latin"], weight: ["400", "500"] });
 
 type TazkiyaInsight = {
   text: string;
@@ -26,6 +37,22 @@ type DashboardData = {
   salah_today?: string[];
   severe_nafs?: { key: string; label: string; value: number }[];
 };
+
+// Each prayer is a moon phase, waxing from Fajr to a full moon at Isha
+const SALAH_MOONS = [
+  { key: "fajr", label: "Fajr", path: "M15 3 A12 12 0 0 1 15 27 A7 12 0 0 0 15 3Z" },
+  { key: "dhuhr", label: "Dhuhr", path: "M15 3 A12 12 0 0 1 15 27 Z" },
+  { key: "asr", label: "Asr", path: "M15 3 A12 12 0 0 1 15 27 A6 12 0 0 1 15 3Z" },
+  { key: "maghrib", label: "Maghrib", path: "M15 3 A12 12 0 0 1 15 27 A10 12 0 0 1 15 3Z" },
+  { key: "isha", label: "Isha", path: null },
+];
+
+const STARS = [
+  { x: 40, y: 12, r: 1.8 }, { x: 95, y: 28, r: 1.4 }, { x: 150, y: 10, r: 2 },
+  { x: 205, y: 24, r: 1.5 }, { x: 260, y: 8, r: 1.8 }, { x: 315, y: 26, r: 1.3 },
+  { x: 370, y: 14, r: 1.7 }, { x: 425, y: 30, r: 1.4 }, { x: 480, y: 10, r: 1.9 },
+  { x: 530, y: 24, r: 1.4 }, { x: 570, y: 8, r: 1.6 }, { x: 590, y: 30, r: 1.3 },
+];
 
 export default function TazkiyaDashboard({
   data,
@@ -43,195 +70,188 @@ export default function TazkiyaDashboard({
   onToggleSalah?: (prayerKey: string) => void;
 }) {
   const router = useRouter();
+  const name = greetingName.replace(/^,\s*/, "");
+  const streak = data.muhasaba_streak ?? 0;
   const salahToday = data.salah_today ?? [];
   const severeNafs = data.severe_nafs ?? [];
+  const litStars = Math.min(streak, STARS.length);
 
-  const handleInsightCta = () => {
-    if (!data.insight?.ctaHref) return;
-    if (data.insight.chatPrefill) {
-      localStorage.setItem("rise_chat_prefill", data.insight.chatPrefill);
-    }
-    router.push(data.insight.ctaHref);
+  const openChatWith = (prefill: string) => {
+    router.push(`/dashboard/chat?q=${encodeURIComponent(prefill)}`);
   };
 
+  const moonLine =
+    salahToday.length === 5
+      ? "Full moon tonight. Every prayer, today."
+      : salahToday.length === 0
+      ? "The moon's still new today. Fajr starts it."
+      : `The moon's ${salahToday.length}/5 full today. It completes at Isha.`;
+
+  const topNafs = severeNafs[0];
+  const topNafsName = topNafs ? topNafs.label.split(" (")[1]?.replace(")", "") || topNafs.label : "";
+
   return (
-    <div className="p-6 sm:p-10 relative min-h-full">
+    <div className={`${inter.className} p-6 sm:p-10 relative min-h-full`}>
       <div
         className="fixed inset-0 pointer-events-none z-0"
         style={{
           backgroundImage: "url('/rise-landing-bg.png')",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          opacity: 0.8,
+          opacity: 0.35,
         }}
       />
-      <div className="relative z-10">
-        <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl px-4 py-3">
-            <h1 className="text-3xl sm:text-4xl font-serif text-[#2C3E40]">Welcome back{greetingName}</h1>
-            <p className="text-sm text-[#5E7473] mt-1">{today}</p>
-          </div>
-          <div className="flex gap-3">
-            <div className="bg-white border border-[#DCE4DC] rounded-2xl px-5 py-3 text-center">
-              <p className="text-[10px] tracking-wide text-[#5E7473] flex items-center justify-center gap-1">
-                <Flame size={11} className="text-[#D6C6A8]" /> TAWBAH STREAK
-              </p>
-              <p className="text-lg font-serif text-[#2C3E40]">{data.muhasaba_streak ?? 0} Days</p>
-            </div>
-            <div className="bg-white border border-[#DCE4DC] rounded-2xl px-5 py-3 text-center">
-              <p className="text-[10px] tracking-wide text-[#5E7473]">TODAY</p>
-              <p className="text-lg font-serif text-[#2C3E40] flex items-center gap-1 justify-center">
-                {data.muhasaba_today && <CheckCircle2 size={14} className="text-[#2E5E4E]" />}
-                {data.muhasaba_today ? "Done" : "Pending"}
-              </p>
-            </div>
-          </div>
-        </div>
 
-        {((goals && goals.length > 0) || salahToday.length > 0) && (
-          <div className="bg-white border border-[#DCE4DC] rounded-2xl p-4 mb-4">
-            {goals && goals.length > 0 && (
-              <>
-                <div className="flex items-center gap-2 mb-2">
-                  <Target size={16} className="text-[#2E5E4E]" />
-                  <p className="text-[10px] tracking-wide text-[#5E7473] uppercase">Your focus</p>
-                </div>
-                <div className="space-y-2">
-                  {goals.map((g) => (
-                    <div key={g.id} className="flex items-start justify-between gap-2 bg-[#EAF0E8] rounded-xl px-3 py-2">
-                      <p className="text-sm text-[#2C3E40]">{g.text}</p>
-                      <button
-                        onClick={() => onDeleteGoal?.(g.id)}
-                        className="text-[#B5A07A] hover:text-[#E0674F] flex-shrink-0 mt-0.5 transition-colors"
-                        aria-label="Delete goal"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+      <div className="relative z-10 max-w-3xl">
+        <p className="text-sm text-[#5E7473] mb-3">{today}</p>
 
-            <div className={`flex items-center gap-2 ${goals && goals.length > 0 ? "border-t border-[#F0EDE6] pt-3 mt-3" : ""}`}>
-              <Moon size={14} className="text-[#D6C6A8]" />
-              <p className="text-sm text-[#2C3E40]">
-                Salah today: <span className="font-semibold">{salahToday.length}/5</span>
-              </p>
-            </div>
-          </div>
-        )}
+        {/* The night sky */}
+        <div className="bg-[#2C3E40] rounded-3xl p-5 sm:p-6 mb-4 relative overflow-hidden">
+          <svg viewBox="0 0 600 40" className="w-full block absolute top-2 left-0" aria-hidden="true">
+            {STARS.map((s, i) => (
+              <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#F1ECE1" opacity={i < litStars ? 1 : 0.18} />
+            ))}
+          </svg>
 
-        {/* Salah quick-log — tap to mark today's prayers. Synced to the
-            backend via /muhasaba-log (log_type "salah") so it's real,
-            cross-device data, not a local-only counter. */}
-        <div className="bg-white border border-[#DCE4DC] rounded-2xl p-4 mb-4">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[10px] tracking-wide text-[#5E7473] uppercase">Salah today</p>
-            <p className="text-sm font-serif text-[#2C3E40]">{salahToday.length}/5</p>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {SALAH.map((s) => {
-              const done = salahToday.includes(s.key);
+          <p className={`${caveat.className} text-3xl text-[#F1ECE1] leading-tight mt-6`}>
+            assalamu alaikum{name ? `, ${name}` : ""}
+          </p>
+          <p className="text-xs text-[#9CB5AE] mb-5">
+            {streak === 0
+              ? "A quiet sky tonight. Your first reflection lights the first star."
+              : `${streak} ${streak === 1 ? "night" : "nights"} of reflection — each star is a night you sat with yourself.`}
+          </p>
+
+          <div className="flex justify-between max-w-md">
+            {SALAH_MOONS.map((m) => {
+              const prayed = salahToday.includes(m.key);
+              const lit = prayed ? "#E8C77A" : "#4F6668";
               return (
                 <button
-                  key={s.key}
-                  onClick={() => onToggleSalah?.(s.key)}
-                  className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-                    done
-                      ? "bg-[#2E5E4E] text-white border-[#2E5E4E]"
-                      : "bg-white text-[#5E7473] border-[#DCE4DC] hover:border-[#2E5E4E]/40"
-                  }`}
+                  key={m.key}
+                  type="button"
+                  onClick={() => onToggleSalah?.(m.key)}
+                  className="flex flex-col items-center gap-1"
+                  aria-label={`${m.label} ${prayed ? "prayed" : "not yet prayed"}`}
                 >
-                  {s.label}
+                  <svg width="34" height="34" viewBox="0 0 30 30">
+                    {m.path ? (
+                      <>
+                        <circle cx="15" cy="15" r="12" fill="#3E5456" />
+                        <path d={m.path} fill={lit} style={{ transition: "fill 0.3s" }} />
+                      </>
+                    ) : (
+                      <circle cx="15" cy="15" r="12" fill={lit} style={{ transition: "fill 0.3s" }} />
+                    )}
+                  </svg>
+                  <span className="text-[11px] text-[#D6C6A8]">{m.label}</span>
                 </button>
               );
             })}
           </div>
+          <p className="text-sm text-[#F1ECE1] mt-4">{moonLine}</p>
+
+          {topNafs && (
+            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[#F1ECE1]/10">
+              <Cloud size={18} className="text-[#9CB5AE] flex-shrink-0" />
+              <p className="text-sm text-[#D6C6A8] flex-1">
+                A little {topNafsName.toLowerCase()} has been clouding things lately.
+              </p>
+              <button
+                onClick={() =>
+                  openChatWith(`I've been struggling with ${topNafsName.toLowerCase()} lately — can you help me understand it?`)
+                }
+                className="text-xs text-[#F1ECE1] border border-[#F1ECE1]/30 rounded-full px-3 py-1.5 hover:bg-white/5 transition-colors"
+              >
+                Talk it through
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Currently-high nafs ratings — a standing summary, not just a
-            rotating single insight sentence. */}
-        {severeNafs.length > 0 && (
-          <div className="bg-[#FDEDEA] border border-[#E0674F]/30 rounded-2xl p-4 mb-4">
-            <p className="text-[10px] tracking-wide text-[#A14C36] uppercase mb-2">Currently high</p>
-            <div className="flex flex-wrap gap-2">
-              {severeNafs.map((n) => (
-                <span
-                  key={n.key}
-                  className="text-xs font-semibold bg-white text-[#A14C36] px-3 py-1 rounded-full border border-[#E0674F]/30"
-                >
-                  {n.label} · {n.value}/5
-                </span>
+        {/* Other gentle insights (salah trend, consistency) as a sticky note */}
+        {!topNafs && data.insight && (
+          <div className="flex justify-end mb-5">
+            <button
+              type="button"
+              onClick={() => data.insight?.chatPrefill && openChatWith(data.insight.chatPrefill)}
+              className={`${caveat.className} text-left bg-[#FBF0C8] text-[#4A5548] text-xl leading-snug px-4 py-3 rounded-md max-w-xs shadow-[0_6px_14px_rgba(0,0,0,0.10)]`}
+              style={{ transform: "rotate(-2deg)", cursor: data.insight.chatPrefill ? "pointer" : "default" }}
+            >
+              {data.insight.text}
+            </button>
+          </div>
+        )}
+
+        {/* Tonight's reflection — warm dusk colors, the day's main invitation */}
+        <Link
+          href="/dashboard/muhasaba"
+          className="group relative block overflow-hidden rounded-3xl px-6 py-5 mb-4 transition-transform hover:-translate-y-0.5"
+          style={{ background: "linear-gradient(120deg, #E8C77A 0%, #D9A86C 45%, #B5796A 100%)" }}
+        >
+          <svg className="absolute -right-4 -top-6 opacity-25" width="130" height="130" viewBox="0 0 30 30" aria-hidden="true">
+            <path d="M15 3 A12 12 0 0 1 15 27 A7 12 0 0 0 15 3Z" fill="#FFF8E7" />
+          </svg>
+          <p className={`${caveat.className} text-xl text-[#4A3325]`}>
+            {data.muhasaba_today ? "you've already sat with today" : "when you're ready tonight"}
+          </p>
+          <div className="flex items-center justify-between gap-3 relative">
+            <p className={`${playfair.className} text-2xl text-[#2C2018] leading-snug`}>
+              {data.muhasaba_today ? "Revisit your reflection" : "Sit with today's reflection"}
+            </p>
+            <span className="w-9 h-9 rounded-full bg-[#2C3E40] text-[#F1ECE1] flex items-center justify-center flex-shrink-0 transition-transform group-hover:translate-x-1">
+              <ArrowRight size={16} />
+            </span>
+          </div>
+          <p className="text-xs text-[#4A3325]/80 mt-1 relative">
+            Five gentle questions. A few minutes. Just for you.
+          </p>
+        </Link>
+
+        {goals && goals.length > 0 && (
+          <div className="bg-white/80 rounded-3xl p-5 mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-7 h-7 rounded-full bg-[#F3E6C4] flex items-center justify-center">
+                <Target size={15} className="text-[#8A6D2F]" />
+              </span>
+              <div>
+                <p className={`${playfair.className} text-base text-[#2C3E40] leading-tight`}>Your focus</p>
+                <p className="text-[11px] text-[#8A8478]">still working on</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {goals.map((g) => (
+                <div key={g.id} className="flex items-start justify-between gap-3">
+                  <p className="text-sm text-[#2C3E40]">{g.text}</p>
+                  <button
+                    onClick={() => onDeleteGoal?.(g.id)}
+                    className="text-[#C9C4B8] hover:text-[#E0674F] flex-shrink-0 mt-0.5 transition-colors"
+                    aria-label="Remove"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
               ))}
             </div>
           </div>
         )}
 
-        {data.insight && (
-          <div className="bg-[#FBF3E0] border border-[#E8B84B]/40 rounded-2xl p-4 mb-6">
-            <div className="flex items-start gap-3">
-              <Sparkles size={16} className="text-[#C99A2E] mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-[10px] tracking-wide text-[#8A6D2F] uppercase mb-0.5">Rise noticed</p>
-                <p className="text-sm text-[#4A4536]">{data.insight.text}</p>
-                {data.insight.ctaLabel && (
-                  <button
-                    onClick={handleInsightCta}
-                    className="text-xs font-semibold text-[#8A6D2F] mt-2 underline hover:text-[#4A4536] transition-colors"
-                  >
-                    {data.insight.ctaLabel} →
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="bg-[#2C3E40] rounded-2xl p-6 mb-6">
-          <p className="text-xs text-[#D6C6A8] mb-2">Wisdom of the day</p>
-          <p className="text-lg font-serif italic text-white">The one who reflects on their soul each night purifies it before it hardens.</p>
-        </div>
-
-        <Link
-          href="/dashboard/muhasaba"
-          className="block bg-[#2E5E4E] hover:bg-[#254D40] rounded-2xl p-6 mb-6 transition-colors"
-        >
-          <p className="text-xs text-[#B7D4C6] mb-1">
-            {data.muhasaba_today ? "You've already reflected today" : "Today's next step"}
-          </p>
-          <p className="text-xl font-serif text-white flex items-center gap-2">
-            {data.muhasaba_today ? "Revisit today's reflection" : "Start today's reflection"}
-            <Moon size={20} />
-          </p>
-        </Link>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Link href="/dashboard/nafs" className="bg-white border border-[#DCE4DC] rounded-2xl p-6 hover:shadow-md transition-shadow">
-            <Activity size={22} className="text-[#D6C6A8] mb-3" />
-            <h3 className="font-semibold text-[#2C3E40]">Nafs Tracker</h3>
-            <p className="text-xs text-[#5E7473] mt-1">Check your inner state</p>
+        {/* Small, quiet doors to the rest */}
+        <div className="grid grid-cols-3 gap-3">
+          <Link href="/dashboard/nafs" className="bg-white/80 hover:bg-white rounded-2xl p-4 transition-colors">
+            <Activity size={18} className="text-[#B5A07A] mb-2" />
+            <p className={`${playfair.className} text-base text-[#2C3E40]`}>Nafs check</p>
           </Link>
-          <Link href="/dashboard/tawbah" className="bg-white border border-[#DCE4DC] rounded-2xl p-6 hover:shadow-md transition-shadow">
-            <Shield size={22} className="text-[#D6C6A8] mb-3" />
-            <h3 className="font-semibold text-[#2C3E40]">Tawbah</h3>
-            <p className="text-xs text-[#5E7473] mt-1">Return and repent</p>
+          <Link href="/dashboard/tawbah" className="bg-white/80 hover:bg-white rounded-2xl p-4 transition-colors">
+            <Shield size={18} className="text-[#B5A07A] mb-2" />
+            <p className={`${playfair.className} text-base text-[#2C3E40]`}>Tawbah</p>
           </Link>
-          <Link href="/dashboard/chat" className="bg-white border border-[#DCE4DC] rounded-2xl p-6 hover:shadow-md transition-shadow">
-            <MessageCircle size={22} className="text-[#D6C6A8] mb-3" />
-            <h3 className="font-semibold text-[#2C3E40]">Ask Rise</h3>
-            <p className="text-xs text-[#5E7473] mt-1">Ask why a struggle keeps returning</p>
-            <span className="text-xs font-semibold text-[#2C3E40] mt-2 inline-block">Open chat →</span>
+          <Link href="/dashboard/chat" className="bg-white/80 hover:bg-white rounded-2xl p-4 transition-colors">
+            <MessageCircle size={18} className="text-[#B5A07A] mb-2" />
+            <p className={`${playfair.className} text-base text-[#2C3E40]`}>Ask Rise</p>
           </Link>
         </div>
       </div>
-
-      <Link
-        href="/dashboard/chat"
-        className="fixed bottom-6 right-6 z-20 w-12 h-12 rounded-full bg-[#2C3E40] text-white flex items-center justify-center shadow-lg hover:bg-[#233033] transition-colors"
-      >
-        <MessageCircle size={20} />
-      </Link>
     </div>
   );
 }
